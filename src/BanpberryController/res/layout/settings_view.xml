@@ -1,0 +1,17 @@
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:android1="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@android:color/background_dark"
+    android:columnCount="1" >
+    
+	<TextView
+        android:id="@+id/textView1"
+        android:layout_column="0"
+        android:layout_gravity="center_horizontal|top"
+        android:layout_row="0"
+        android:text="Settings"
+        android:textAppearance="?android:attr/textAppearanceLarge" 
+        android:textColor="#00FF00"/>
+
+</GridLayout>

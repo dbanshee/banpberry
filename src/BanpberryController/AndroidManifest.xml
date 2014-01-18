@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="banshee.banpberrycontroller"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="16"
+        android:targetSdkVersion="16" />
+    
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name="banshee.banpberrycontroller.BBCMain"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>		    
+		    <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+			</intent-filter>
+			<intent-filter>
+			    <action android:name="android.intent.action.VIEW" />
+			    <category android:name="android.intent.category.DEFAULT" />
+			    <category android:name="android.intent.category.BROWSABLE" />
+			    <data android:scheme="http" />
+			    <data android:scheme="https" />
+			    <data android:mimeType="video/*" />
+			    <data android:mimeType="audio/*" />
+			</intent-filter>
+			<intent-filter>
+			    <action android:name="android.intent.action.VIEW" />
+			    <category android:name="android.intent.category.DEFAULT" />
+			    <category android:name="android.intent.category.BROWSABLE" />
+			    <data android:scheme="http" />
+			    <data android:scheme="https" />
+			    <data android:host="192.168.15.*" />
+			</intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="" />
+                <data android:scheme="file" />
+                <data android:scheme="ftp" />
+                <data android:scheme="content" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="*/rmvb" />
+                <data android:mimeType="*/avi" />
+                <data android:mimeType="*/mkv" />
+                <data android:mimeType="application/mp4" />
+                <data android:mimeType="application/mpeg*" />
+                <data android:mimeType="application/ogg" />
+                <data android:mimeType="application/x-extension-mp4" />
+                <data android:mimeType="application/x-flac" />
+                <data android:mimeType="application/x-matroska" />
+                <data android:mimeType="application/x-mpegURL" />
+                <data android:mimeType="application/x-ogg" />
+                <data android:mimeType="application/x-shockwave-flash" />
+            </intent-filter>
+            
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="" />
+                <data android:scheme="file" />
+                <data android:scheme="ftp" />
+                <data android:scheme="content" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="*" />
+
+                <!-- video -->
+
+                <data android:pathPattern=".*\\.avi" />
+                <data android:pathPattern=".*\\.divx" />
+                <data android:pathPattern=".*\\.f4v" />
+                <data android:pathPattern=".*\\.flv" />
+                <data android:pathPattern=".*\\.mkv" />
+                <data android:pathPattern=".*\\.mov" />
+                <data android:pathPattern=".*\\.mpe" />
+                <data android:pathPattern=".*\\.mp4" />
+                <data android:pathPattern=".*\\.mpeg" />
+                <data android:pathPattern=".*\\.mpeg1" />
+                <data android:pathPattern=".*\\.mpeg2" />
+                <data android:pathPattern=".*\\.mpeg4" />
+                <data android:pathPattern=".*\\.mpg" />
+                <data android:pathPattern=".*\\.ogm" />
+                <data android:pathPattern=".*\\.ogv" />
+                <data android:pathPattern=".*\\.ogx" />
+                <data android:pathPattern=".*\\.rm" />
+                <data android:pathPattern=".*\\.rmvb" />
+                <data android:pathPattern=".*\\.wmv" />
+
+                <data android:pathPattern=".*\\.AVI" />
+                <data android:pathPattern=".*\\.DIVX" />
+                <data android:pathPattern=".*\\.F4V" />
+                <data android:pathPattern=".*\\.FLV" />
+                <data android:pathPattern=".*\\.MKV" />
+                <data android:pathPattern=".*\\.MOV" />
+                <data android:pathPattern=".*\\.MPE" />
+                <data android:pathPattern=".*\\.MP4" />
+                <data android:pathPattern=".*\\.MPEG" />
+                <data android:pathPattern=".*\\.MPEG1" />
+                <data android:pathPattern=".*\\.MPEG2" />
+                <data android:pathPattern=".*\\.MPEG4" />
+                <data android:pathPattern=".*\\.MPG" />
+                <data android:pathPattern=".*\\.OGM" />
+                <data android:pathPattern=".*\\.OGV" />
+                <data android:pathPattern=".*\\.OGX" />
+                <data android:pathPattern=".*\\.PS" />
+                <data android:pathPattern=".*\\.RM" />
+                <data android:pathPattern=".*\\.RMVB" />
+                <data android:pathPattern=".*\\.WMV" />
+                
+                <!-- audio -->
+
+                <data android:pathPattern=".*\\.mp1" />
+                <data android:pathPattern=".*\\.mp2" />
+                <data android:pathPattern=".*\\.mp3" />
+                <data android:pathPattern=".*\\.mpga" />
+                <data android:pathPattern=".*\\.ogg" />
+                <data android:pathPattern=".*\\.wav" />
+                <data android:pathPattern=".*\\.wma" />
+                
+                <data android:pathPattern=".*\\.MP1" />
+                <data android:pathPattern=".*\\.MP2" />
+                <data android:pathPattern=".*\\.MP3" />
+                <data android:pathPattern=".*\\.MPGA" />
+                <data android:pathPattern=".*\\.OGG" />
+                <data android:pathPattern=".*\\.WAV" />
+                <data android:pathPattern=".*\\.WMA" />
+            </intent-filter>
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+        </activity>
+    </application>
+    
+    
+
+</manifest>

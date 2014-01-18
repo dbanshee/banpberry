@@ -1,0 +1,138 @@
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:android1="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@android:color/background_dark"
+    android:columnCount="1" >
+
+    <Spinner
+        android1:id="@+id/spinner1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="#00FF00"
+        android:gravity="left"
+        android:prompt="@string/drawer_open"
+        android:spinnerMode="dropdown"
+        android1:textAlignment="textEnd" />
+    
+     <ImageView
+        android1:id="@+id/imageView1"
+        android1:layout_column="0"
+        android1:layout_gravity="center"
+        android1:layout_row="0"
+        android1:src="@drawable/play_main" 
+        android:layout_marginBottom="40dp"
+        android:layout_marginLeft="40dp"/>
+     
+     
+    <TableLayout
+        android:layout_column="0"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_row="0" 
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" >
+
+        <TableRow
+            android:id="@+id/tableRow1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" 
+            android:layout_marginBottom="10dp">
+
+            <!-- style="?android:attr/buttonStyleSmall" -->
+
+            <Button
+                android:id="@+id/prevtrack_button"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/previoustrack"
+                android:textColor="@android:color/white" />
+
+            <Button
+                android:id="@+id/fbackward_button"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fbackward"  
+                android:textColor="@android:color/white"/>
+             
+             <Button
+                android:id="@+id/pause_button"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/pause"  
+                android:layout_columnSpan="2"
+                android:textColor="@android:color/white"/>
+             
+              <Button
+                android:id="@+id/fforward_button"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fforward"  
+                android:textColor="@android:color/white" />
+              
+              <Button
+                android:id="@+id/nexttrack_button"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/nexttrack"  
+                android:textColor="@android:color/white" />
+        </TableRow>    
+        
+        <TableRow
+            android:id="@+id/tableRow1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" 
+            android:layout_marginBottom="10dp" >
+              
+            <Button
+                android:id="@+id/info_button"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/info"  
+                android:textColor="@android:color/white" />
+            
+            <Button
+                android:id="@+id/restart_button"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/restart"  
+                android:textColor="@android:color/white" />
+            
+            <Button
+                android:id="@+id/stop_button"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/stop"  
+                android:textColor="@android:color/white" />
+            
+            <Button
+                android:id="@+id/voldown_button"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/voldown"  
+                android:textColor="@android:color/white" />
+            
+            <Button
+                android:id="@+id/volup_button"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/volup"  
+                android:textColor="@android:color/white" />
+            
+		</TableRow>    
+        
+    </TableLayout>
+
+   
+    
+</GridLayout>

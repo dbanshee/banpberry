@@ -1,0 +1,82 @@
+<!--
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:columnCount="1" 
+    android:background="@android:color/background_dark">
+
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_column="0"
+        android:layout_gravity="center_horizontal|top"
+        android:layout_row="0"
+        android:text="Media Browser"
+        android:textAppearance="?android:attr/textAppearanceLarge" 
+        android:textColor="#00FF00"/>
+
+</GridLayout>
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" 
+    android:background="@android:color/background_dark">
+    
+    <!-- 
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="fill_parent"
+    	android:layout_height="wrap_content"
+        android:text="Media Browser"
+        android:gravity="center"
+        android:textAppearance="?android:attr/textAppearanceLarge" 
+        android:textColor="#00FF00"/>
+     -->
+	
+
+
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1" >
+    
+      	<LinearLayout 	android:layout_width="fill_parent"
+	    				android:layout_height="fill_parent"
+	    				android:orientation="vertical"
+	    				android:visibility="visible">
+	    			
+            <TextView
+                android:id="@+id/locationText"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="TextView"
+                android:textColor="#00FF00" 
+                android:layout_weight="0.1"
+                android:paddingLeft="10dp"
+                android:paddingBottom="10dp"/>
+            
+	        <ListView 
+	            android:id="@+id/mediaItemList"
+	            android:layout_width="fill_parent"
+	    		android:layout_height="fill_parent"
+	    		android:drawSelectorOnTop="false"
+	    		android:layout_weight="0.9" 
+	    		/>
+
+
+        </LinearLayout>
+        <!-- android:layout_weight="100" -->
+        <TextView 
+            android:id="@+id/empty"
+            android:layout_width="fill_parent"
+    		android:layout_height="fill_parent"
+    		android:text="Empty" 
+    		android:visibility="invisible"/>
+            
+            
+        
+        
+    </FrameLayout>
+
+</LinearLayout>
