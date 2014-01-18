@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>
+        Jens Segers
+                - Realtek RTL8188 based access point on Raspberry Pi            </title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href='//fonts.googleapis.com/css?family=Open+Sans:400,300,600,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="http://jenssegers.be/css/common.css?v=091101">
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <img src="http://jenssegers.be/img/jenssegers.svg">
+            <h1>
+                <a href="http://jenssegers.be">
+                <strong>jens</strong>segers
+                </a>
+            </h1>
+
+            <nav>
+                <a href="http://jenssegers.be/blog">Blog</a>
+                <a href="http://jenssegers.be/projects">Projects</a>
+                <a href="http://jenssegers.be/about">About</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+                    <article>
+
+	<h1>
+		Realtek RTL8188 based access point on Raspberry Pi		<small>Written by Jens Segers on 2013-02-15 16:02:24</small>
+	</h1>
+
+	<p>I had some trouble getting my Edimax EW-7811Un wireless adapter to work on my Raspberry Pi. This Realtek RTL8188CUS chipset based adapter works right out of the box when you use it to connect to wireless networks. But if I tried to set up an access point, I ran into some problems. Following a few blog posts on the web, I installed hostapd, but was always presented with the following error:</p>
+<pre><code>$ sudo hostapd /etc/hostapd/hostapd.conf
+Configuration file: /etc/hostapd/hostapd.conf
+nl80211: 'nl80211' generic netlink not found
+Failed to initialize driver 'nl80211'
+rmdir[ctrl_interface]: No such file or directory</code></pre>
+<p>Changing the driver parameter in the configuration file did not do anything but produce different error messages. I had almost given up hope with this adapter, until I read a post by <a href="http://www.raspberrypi.org/phpBB3/viewtopic.php?f=46&amp;t=25921&amp;p=285160">not_the_pi_guy</a> on the raspberry pi forums. He discovered that Realtek has their own version of hostapd on their website for this specific chipset.  I moved the original Realtek source files to a <a href="https://github.com/jenssegers/RTL8188-hostapd">github repository</a>, and manipulated the Makefile to make installing a bit easier. I will guide you through the process.</p>
+<p>Since we are building our own hostapd version, remove the original hostapd you might have installed:</p>
+<pre><code>sudo apt-get autoremove hostapd</code></pre>
+<p>On your Raspberry Pi, download and extract the source files from github:</p>
+<pre><code>wget https://github.com/jenssegers/RTL8188-hostapd/archive/v1.1.tar.gz
+tar -zxvf v1.1.tar.gz</code></pre>
+<p>Now build hostapd:</p>
+<pre><code>cd RTL8188-hostapd-1.1/hostapd
+sudo make</code></pre>
+<p>After a while, you should be given control back to the terminal.</p>
+<pre><code>sudo make install</code></pre>
+<p>This last step will move the created hostapd binary to /usr/local/bin, add a startup script and create a configuration file in /etc/hostapd/hostapd.conf. Edit this configuration file and start the hostapd service:</p>
+<pre><code>$ sudo service hostapd restart
+[ ok ] Stopping advanced IEEE 802.11 management: hostapd.
+[ ok ] Starting advanced IEEE 802.11 management: hostapd.</code></pre>
+<p>If you want to contribute to the Makefile or any of the scripts, send me a pull request on <a href="https://github.com/jenssegers/RTL8188-hostapd"><a href="https://github.com/jenssegers/RTL8188-hostapd">https://github.com/jenssegers/RTL8188-hostapd</a></a>. You can follow this guide if you want further instructions on how to set up the actual hostspot for your Raspberry Pi.</p>
+</article><section id="comments">
+	<a name="comments"></a>
+
+	<h2><strong>57</strong> Comments</h2>
+
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/4fc333ff9c9a102607b7ca0bcf9367eb?s=60">
+		<div class="body">
+			<strong>xezpeleta</strong>, 2 months ago			<p>Same problem as <strong>@deepsheet</strong> and <strong>@leucos</strong></p>
+<p>My 'lsusb' says I have a RTL8188SU. If I execute "iwconfig wlan0 mode master" there is no error, so I guess master mode is supported... but hostapd doesn't work :/</p>
+<p>ioctl[RTL_IOCTL_HOSTAPD]: Operation not supported</p>
+<p>Thanks in advance!</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/f9b753acc754356b932be5eb1cf30536?s=60">
+		<div class="body">
+			<strong>Oopra</strong>, 3 months ago			<p>Thank you!!! great post. Solved my problem.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/d8bcab83f785423dcc51350be6b28b46?s=60">
+		<div class="body">
+			<strong>Chris A</strong>, 3 months ago			<p>ignore my last, I used the default settings from the conf file and n mode works perfecttly, thankyou!</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/d8bcab83f785423dcc51350be6b28b46?s=60">
+		<div class="body">
+			<strong>Chris A</strong>, 3 months ago			<p>Jens, this is truly fantastic work, thank you for putting this so succinctly and clearly on the board.</p>
+<p>I was wondering if the compiled driver supports N node as well as bg?</p>
+<p>iwconfig shows :</p>
+<p>IEEE 802.11bg 
+Bit Rate:54Mbps</p>
+<p>I am using the following hostapd.conf:</p>
+<p>ignore_broadcast_ssid=0
+driver=rtl871xdrv
+device_name=RTL8192CU
+manufacturer=Realtek</p>
+<p>interface=wlan0
+ssid=home
+hw_mode=g
+channel=2
+wmm_enabled=1
+country_code=SG
+ieee80211d=1
+auth_algs=3
+wpa=3
+wpa_passphrase=home1234
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+macaddr_acl=0
+ht_capab=[HT20][SHORT-GI-20]</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/a8c1e1fc23835324d400ef9acfc5d14b?s=60">
+		<div class="body">
+			<strong>leucos</strong>, 3 months ago			<p><strong>@deepsheet</strong> : I suppose our chipsets  (RTL8188SU) doesn't work with this. However I tried with RTL8188CUS and it works fine. Thanks Jens !</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b4e6cd606ce4f2122d78f259e46ea64a?s=60">
+		<div class="body">
+			<strong>Jens Segers</strong>, 3 months ago			<p><strong>@leucos</strong>, you could ask the forum: <a href="http://www.raspberrypi.org/phpBB3/viewtopic.php?f=46&amp;t=25921&amp;p=285160">http://www.raspberrypi.org/phpBB3/viewtopic.php?f=46&amp;t=25921&amp;p=285160</a></p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/a8c1e1fc23835324d400ef9acfc5d14b?s=60">
+		<div class="body">
+			<strong>leucos</strong>, 3 months ago			<p>Same issue as <strong>@deepsheet</strong> with :
+<code>ID 0bda:8171 Realtek Semiconductor Corp. RTL8188SU 802.11n WLAN Adapter</code></p>
+<p>Any clue ?</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/506c2019de3dcf27c267d444e93fc3f0?s=60">
+		<div class="body">
+			<strong>deepsheet</strong>, 3 months ago			<pre><code>pi<strong>@raspberrypi</strong> ~/RTL8188-hostapd-1.1/hostapd $ sudo service hostapd restart
+[ ok ] Stopping advanced IEEE 802.11 management: hostapd.
+[....] Starting advanced IEEE 802.11 management: hostapdioctl[RTL_IOCTL_HOSTAPD]: Operation not supported
+ioctl[RTL_IOCTL_HOSTAPD]: Operation not supported
+ioctl[RTL_IOCTL_HOSTAPD]: Operation not supported
+ioctl[RTL_IOCTL_HOSTAPD]: Operation not supported
+ioctl[RTL_IOCTL_HOSTAPD]: Operation not supported
+ioctl[RTL_IOCTL_HOSTAPD]: Operation not supported
+ioctl[RTL_IOCTL_HOSTAPD]: Operation not supported
+ioctl[RTL_IOCTL_HOSTAPD]: Operation not supported
+ioctl[RTL_IOCTL_HOSTAPD]: Operation not supported
+. ok</code></pre>
+<p>Any ideas how to fix this? Driver issues?</p>
+<p>lsusb:</p>
+<pre><code>Bus 001 Device 005: ID 0bda:8171 Realtek Semiconductor Corp. RTL8188**SU** 802.11n WLAN Adapter</code></pre>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/d08cb92319eb0e8f34b2540c60b6cc33?s=60">
+		<div class="body">
+			<strong>Bank</strong>, 4 months ago			<p>Hey, I'd like to know more about your code. Where is the main function of this code</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b4e6cd606ce4f2122d78f259e46ea64a?s=60">
+		<div class="body">
+			<strong>Jens Segers</strong>, 4 months ago			<p><strong>@Steven</strong>, the <code>sudo make install</code> command wil move the startup and configuration file to the correct location for you. You don't need to do this yourself. You only have to check the <code>/etc/hostapd/hostapd.conf</code> file for configuration and start the service.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/36d58bd32c68a7c9a31e9107919ca210?s=60">
+		<div class="body">
+			<strong>Steven</strong>, 4 months ago			<p>Hi. Awesome instructions, been having problems with hostapd and yours is the first info blog that has said you have to make the file! THANK YOU.  I am a total Noob with all of this but need a R-Pi as an AP to carry out a project I am working on.  I now need to figure out how to carry out your last step of moving the file to where it is meant to be.......</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b4e6cd606ce4f2122d78f259e46ea64a?s=60">
+		<div class="body">
+			<strong>Jens Segers</strong>, 5 months ago			<p><strong>@Zach</strong>, I remember mine being slow as wel, but I don't remember how slow :)</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/787ada7253cbfc412d928b39b2a7536d?s=60">
+		<div class="body">
+			<strong>Zach</strong>, 5 months ago			<p>Have you found the Edimax EW-7811Un to be incredibly slow running in AP mode with hostapd?  I'm getting somewhere around 1MB/s through it.  If I use the hawking HWUG1, it's about 10-15x faster.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/86c958c10f301a8864993f186ad0e789?s=60">
+		<div class="body">
+			<strong>Mike</strong>, 5 months ago			<p>Great, many thanks. Helped me to use Realtek RTL8188CUS dongle in my Raspberry.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/ea942023b924aea05f30fd3a0e016d0f?s=60">
+		<div class="body">
+			<strong>LEO</strong>, 5 months ago			<p>Thanks for posting this. Gives us hope....
+I am trying to compile your code for Pidora. I'm not an expert, any advice on what can I research more to make the proper modifications to your install script?</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/18acfcfd3925eecceb8ddfd468e2c6a9?s=60">
+		<div class="body">
+			<strong>Konstantin</strong>, 5 months ago			<p>+1</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/e686efa293026cb7ba8960afca70ff73?s=60">
+		<div class="body">
+			<strong>Scratz</strong>, 5 months ago			<p>Thank you very much ;)</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/962e3630deade32d4bcd3374b5c2b20b?s=60">
+		<div class="body">
+			<strong>Olli</strong>, 5 months ago			<p>Have you tried to apply your patch to hostapd version 2 too?</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/227059d741fd1b4d3930d33daa2326d7?s=60">
+		<div class="body">
+			<strong>Mohammed</strong>, 6 months ago			<p>This works like a charm Jens. Thanks!</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/d790fa79ca1d89f101fa2507ea2fc913?s=60">
+		<div class="body">
+			<strong>mezzobob</strong>, 6 months ago			<p>Hi Jens,</p>
+<p>I got Edimax EW-7811Un in AP mode woking thanks!
+I tried too run airplay over the WiFi i created. 
+iPhone AirPlay > AP WiFi on the pi > shairport on the pi as AirPlay receiver </p>
+<p>The Music is stuttering on the pi :( via ethernet is works fine.  </p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/f9c9a9edaae283bb24a2f24029b42978?s=60">
+		<div class="body">
+			<strong>Tom</strong>, 6 months ago			<p>With the newest Rasbian image and all updates the hostapd fails to autostart. After a manual restart it works but it takes minutes for the AP to send.   </p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/f50173c9317bf40a71a3e6d0ec8e7d2e?s=60">
+		<div class="body">
+			<strong>Damian</strong>, 6 months ago			<p>I fucking love you!</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/1f5206214f1cf26734e9020213b3f1a7?s=60">
+		<div class="body">
+			<strong>King_ofthe_North</strong>, 7 months ago			<p>I followed your instructions religiously and the access point shows up on my wifi search bar, but once I submit the password it fails to connect and "connection time-out" appears. Has anyone encountered this problem?   I'm trying to run the server to experiment with ka-lite (Khan Academy Lite) </p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/d6a086c6657350f7e4963fccd8797ef7?s=60">
+		<div class="body">
+			<strong>Torsten</strong>, 7 months ago			<p><strong>@Xandertron</strong>: check with ifconfig if wlan0 does have an IP address. If it doesn't have one try this: <a href="http://sirlagz.net/2013/02/10/how-to-use-the-raspberry-pi-as-a-wireless-access-pointrouter-part-3b">http://sirlagz.net/2013/02/10/how-to-use-the-raspberry-pi-as-a-wireless-access-pointrouter-part-3b</a>/ also add 'auto wlan0' into /etc/network/interfaces so that wlan0 does come up automatically</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/7e83e9100a6215e43ec5242f2dee7c8d?s=60">
+		<div class="body">
+			<strong>Xandertron</strong>, 7 months ago			<p>Looks like any device that tries to connect gets a 169 ip address.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/7e83e9100a6215e43ec5242f2dee7c8d?s=60">
+		<div class="body">
+			<strong>Xandertron</strong>, 7 months ago			<p>Hi.
+I follow your guide and the hotspot sets up fine. However i cannot get anything to connect to it.
+I've had a read of <a href="http://elinux.org/RPI-Wireless-Hotspot">http://elinux.org/RPI-Wireless-Hotspot</a> and ruled out the WPA causing the problem as i get the same problem with an unsecure connection.
+My DHCP is setup exactly as mentioned too yet still no joy. Can anyone shed any light on a confusing problem?
+Thank you.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/2b7bac198b8d719b486d570bb8d5173b?s=60">
+		<div class="body">
+			<strong>silverk</strong>, 7 months ago			<p>works fine with EDIMAX and raspbian. Thank You!</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/d6a086c6657350f7e4963fccd8797ef7?s=60">
+		<div class="body">
+			<strong>Torsten</strong>, 7 months ago			<p>Hi Jens,  I followed your guide an then the one you linked to in your last sentence. I have the problem that I can't run hostapd on boot. The error message is:
+pi<strong>@raspberrypi</strong> ~ $ sudo update-rc.d hostapd enable
+update-rc.d: using dependency based boot sequencing
+update-rc.d: error: no runlevel symlinks to modify, aborting!
+Do you have any ideas? Thanks for your help!</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b4e6cd606ce4f2122d78f259e46ea64a?s=60">
+		<div class="body">
+			<strong>Jens Segers</strong>, 7 months ago			<p><strong>@Trevor</strong>, double check your udhcpd or dnsmasq configuration files. I don't think that problem is related to hostapd. This is a good guide: <a href="http://elinux.org/RPI-Wireless-Hotspot">http://elinux.org/RPI-Wireless-Hotspot</a></p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/a6f216cdff201a4f8a86a9a606206d7a?s=60">
+		<div class="body">
+			<strong>Trevor</strong>, 7 months ago			<p>Same problem as Dan - Android device gets stuck on Obtaining IP address.  I am trying to pickup from a RPi running Rachel server which shows a static IP address.  I think the problem might be in my interfaces setting.  I have iface eth0 inet dhcp  and iface wlan0 inet static.</p>
+<p>Working in Ghana at the moment so really need some online help!!</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/660b1b8af4b47da41244730f747c57d1?s=60">
+		<div class="body">
+			<strong>elceef</strong>, 8 months ago			<p>Can anyone confirm this works with RTL8188EUS chip (TP-Link TL-WN725N V2 USB)?</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/895285aa23efb3121501bffb258fc417?s=60">
+		<div class="body">
+			<strong>liqiang</strong>, 8 months ago			<p>so much thank to you！ I have trouble in this for server days and i want to tell other's that it also useful for EP-N8508GS wireless netcard!</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/9b9f6f33ab2b88860e6bf0878dd8200f?s=60">
+		<div class="body">
+			<strong>Barry</strong>, 8 months ago			<p>Just what I needed, Thanks.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/767934a648524da57388558217ad9c2d?s=60">
+		<div class="body">
+			<strong>fifer</strong>, 8 months ago			<p><strong>@dan</strong> is the hostapd daemon process running after rebooting?  (sudo service hostapd status)  if it is not, try "sudo insserv hostapd" and restart.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/85ee01a80fef13033f0f4308ffa39ea4?s=60">
+		<div class="body">
+			<strong>Richard</strong>, 8 months ago			<p>Your instructions helped a lot.</p>
+<p>I am using my raspi as an access point with AirPlay in my car. How do I stop my iPhone from thinking the ap has Internet? I.e. iPhone connected to ap but still access 3/4G?</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/696b38cf7e631cb3800becb7b0e7c3ee?s=60">
+		<div class="body">
+			<strong>Dan</strong>, 8 months ago			<p>Hi,</p>
+<p>I managed to set this up and got it working using the configuration steps you linked to at the bottom of your instructions, however, after a reboot I can't connect, I get stuck at the Obtaining IP Address step. Any Ideas? I ran all the steps required for this to run automatically on reboot.</p>
+<p>Dan</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/afd1db639b35165a05f7ab3436cbae0e?s=60">
+		<div class="body">
+			<strong>Thomas Hussey </strong>, 9 months ago			<p>hi i have limited connectivity do have to install anything else?</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/a4e5ea3dd9fef40cb83870e10c5137b9?s=60">
+		<div class="body">
+			<strong>Nick B</strong>, 9 months ago			<p>Hi Jens,
+Sorry about my last comment.Did it IE9 and could not see what Iwas supposed to put in each box. Hopefully this one is better now I have done it in Chrome.....Anyway...</p>
+<p>Many thanks for the guide. I was able to get my Pi running as a hotspot. It turns out that my sd card corrpted, so I am doing it again from scratch. Do you recommend following the RPI-Wireless-Hotspot guide first, and then following your guide,or is there a way to combine the 2? Also did you ever do a post about getting udhcpd working with this hostapd? I could never get DHCP address - it only worked when I had a static ip.
+Thanks in advance..
+Nick</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/72c9cf8c50d28dfeeb966619ccb97aa5?s=60">
+		<div class="body">
+			<strong>NickB</strong>, 9 months ago			<p>Hi Jens,
+Many thanks for the guide. I was able to get my Pi running as a hotspot. It turns out that my sd  card corrpted, so I am doing it again from scratch. Do you recommend following the  RPI-Wireless-Hotspot guide first, and then following your guide,or is there a way to combine the 2? Also did you ever do a post about getting udhcpd working with this hostapd? I could never get DHCP address - it only worked when I had a static ip.
+Thanks in advance..
+Nick</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b3bfc4944c82cc26cb416f4c9bcabee7?s=60">
+		<div class="body">
+			<strong>Mark_H</strong>, 9 months ago			<p>No, that is about connecting to an AP with an RTL8188. I want to use th RTL8188 as an AP.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/19fde091e7a9e29b3b1453641fd6d3c5?s=60">
+		<div class="body">
+			<strong>x@y.com</strong>, 9 months ago			<p><strong>@markh</strong> - don't know if this helps?  <a href="http://forum.stmlabs.com/showthread.php?tid=732&amp;pid=36819#pid36819">http://forum.stmlabs.com/showthread.php?tid=732&amp;pid=36819#pid36819</a></p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b3bfc4944c82cc26cb416f4c9bcabee7?s=60">
+		<div class="body">
+			<strong>Mark_H</strong>, 9 months ago			<p>V1.1 is working perfectly (raspian latest + tp-link TL-WN725N) for me too, but it is not working for the latest raspbmc. Wlan0 is not started or dissappears suddenly, when I start it manually it doesn;t get an IP address which I assigned in /etc/network/interfaces.
+I think that raspbmc does not use the standard ways to configure network interfaces, but I can't figure out how to solve it.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/767934a648524da57388558217ad9c2d?s=60">
+		<div class="body">
+			<strong>Fifer</strong>, 9 months ago			<p>One other comment:
+I've been having trouble with hostapd not starting on boot.  I think it starts too soon and fails.
+I think this is because the script needs to call insserv to update the boot sequence?
+I fixed with a one-time "sudo insserv hostapd" after the make install</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/767934a648524da57388558217ad9c2d?s=60">
+		<div class="body">
+			<strong>Fifer</strong>, 9 months ago			<p>Brilliant - thanks very much !!!!
+V1.1 is working perfectly (raspian latest + tp-link TL-WN725N)</p>
+<p>(btw the "tar" and "cd" commands need updating to v1.1)</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b4e6cd606ce4f2122d78f259e46ea64a?s=60">
+		<div class="body">
+			<strong>Jens Segers</strong>, 9 months ago			<p><strong>@Subhash</strong> Karemore, I added some basic WPA configuration to the github repository, it is available in the v1.1 tag. But you should be able to just edit the hostapd.conf file.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b4e6cd606ce4f2122d78f259e46ea64a?s=60">
+		<div class="body">
+			<strong>Jens Segers</strong>, 9 months ago			<p><strong>@Mark</strong>, I did not encounter a similar problem. The problem is more likely to be an issue with your dhcp service (I think I used dnsmasq).</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/dfb178daf797ff0ef5eabdb4113a9223?s=60">
+		<div class="body">
+			<strong>Mark</strong>, 9 months ago			<p>Hi, this is brilliant and has got me much further than any other guide. Thank you.
+My new hotspot shows perfect signal but when i try to connect my phone it appears to fail at "obtaining ip address" and shows as "avoided poor internet connection". Now i dont want it on internet i am just trying to use it as a local link between fones and pi. Have you overcome similar?</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/fafdd8532a275d82cc96e13f2a816db7?s=60">
+		<div class="body">
+			<strong>Subhash Karemore</strong>, 9 months ago			<p>First of all thanks for this post. Earlier I had also same problem. Now my mobile is able to detect to network which I created using above settings. However it doesn't show "connect" button on my mobile. Means I am not able to connect to network. It display status as a "Saved" not "Connected". Mobile doesn't show WIFI notification at the top as it is does not connected to WIFI properly. I cannot browse the internet also. I think problem is with hostapd.conf file. I think we will need to add more settings to hostapd.conf to add password security. So please provide the exact hostapd.conf file which should enable the password security, so that we should able to connect to network using password.</p>
+<p>Another problem is that even I close to RPI, my mobile shows network signal as "not in range". It used to change from some signal to "Not in range" and from "Not in range" to some signal very frequently. Is it because of our configuration or device problem?</p>
+<p>Guys, Please answer queries as soon as possible.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b4e6cd606ce4f2122d78f259e46ea64a?s=60">
+		<div class="body">
+			<strong>Jens Segers</strong>, 9 months ago			<p><strong>@Light</strong>, you should ask the Raspberri Pi forums: <a href="http://www.raspberrypi.org/phpBB3/viewtopic.php?f=46&amp;t=25921&amp;p=285160">http://www.raspberrypi.org/phpBB3/viewtopic.php?f=46&amp;t=25921&amp;p=285160</a></p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/afc75fb9ced464194d491ca7292df18f?s=60">
+		<div class="body">
+			<strong>Light</strong>, 10 months ago			<p>hey what could it be. i made everything like in your description but it's not working:
+pi<strong>@raspberrypi</strong> ~ $ sudo lsusb
+Bus 001 Device 002: ID 0424:9512 Standard Microsystems Corp.
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 001 Device 003: ID 0424:ec00 Standard Microsystems Corp.
+Bus 001 Device 004: ID 7392:7811 Edimax Technology Co., Ltd EW-7811Un 802.11n Wireless Adapter [Realtek RTL8188CUS]
+Bus 001 Device 005: ID 04b4:6830 Cypress Semiconductor Corp. CY7C68300A EZ-USB AT2 USB 2.0 to ATA/ATAPI
+pi<strong>@raspberrypi</strong> ~ $ sudo service hostapd status
+[FAIL] hostapd is not running ... failed!
+pi<strong>@raspberrypi</strong> ~ $ sudo service hostapd start
+[....] Starting advanced IEEE 802.11 management: hostapdioctl(SIOCGIFINDEX): No such device
+ failed!
+pi<strong>@raspberrypi</strong> ~ $</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b4e6cd606ce4f2122d78f259e46ea64a?s=60">
+		<div class="body">
+			<strong>Jens Segers</strong>, 10 months ago			<p><strong>@iztoogod</strong>, the 'make install' command will do this for you. You don't need to do that yourself.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/7ee8494d42d7ad5d6041958a100756ff?s=60">
+		<div class="body">
+			<strong>iztoogod</strong>, 10 months ago			<p>i'm a really newby in linux may you please show an example to explain "add a startup script" please ... </p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b4e6cd606ce4f2122d78f259e46ea64a?s=60">
+		<div class="body">
+			<strong>Jens Segers</strong>, 11 months ago			<p><strong>@Hatschi</strong>; this guide <a href="http://elinux.org/RPI-Wireless-Hotspot">http://elinux.org/RPI-Wireless-Hotspot</a> did exactly the same as I did. Only the iptables bit is a different.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/9bb602830162932f412974c1d8cbf1ff?s=60">
+		<div class="body">
+			<strong>Rob</strong>, 11 months ago			<p>This is excellent and helped me a lot. Thank you very much!</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/b4e6cd606ce4f2122d78f259e46ea64a?s=60">
+		<div class="body">
+			<strong>Jens Segers</strong>, 11 months ago			<p><strong>@Hatschi</strong>; I combined hostapd with udhcpd. I might make a blog post covering those steps. But it is not that complicated.</p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/3b215993c676236064f056a7f8a4b4a5?s=60">
+		<div class="body">
+			<strong>Hatschi</strong>, 11 months ago			<p>Hey,
+do you have a more complete description what steps to take to get edimax running as a hotspot ? </p>		</div>
+	</div>
+		<div class="comment">
+		<img src="http://www.gravatar.com/avatar/ebe58111e3afb29ab46b45b8b7ca6dc3?s=60">
+		<div class="body">
+			<strong>Steve</strong>, 11 months ago			<p>Many thanks. Just what I was looking for. Worked a treat and without any problems. Mine was a generic RTL8188cus.</p>		</div>
+	</div>
+	
+	<div class="comment">
+		<form method="POST" action="http://jenssegers.be/blog/comment/43" accept-charset="UTF-8"><input name="_token" type="hidden" value="wkvDMtP2Cxm5bdNWs414wnDYPudleyIp1ebAzAJd">		
+		<textarea required placeholder="Comment (markdown enabled)" name="body"></textarea>
+		<input required type="email" name="email" placeholder="Email">
+		<input required type="text" name="name" placeholder="Name">
+		<small>Your email address will not be displayed</small>
+		<button type="submit" class="btn">Post comment</button>
+
+		</form>	</div>
+
+</section>            </div>
+
+    <script>
+        var base_path = "http://jenssegers.be/";
+    </script>
+    <script src="http://jenssegers.be/js/all.js?v=091101"></script>
+
+    <script>
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-2447756-12']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'stats.g.doubleclick.net/dc.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+    </script>
+
+</body>
+</html>
