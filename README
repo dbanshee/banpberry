@@ -26,7 +26,11 @@
     | |--db.banpberry.net   (/etc/bind)
     | \--sysctl.conf        (/etc   net.ipv4.ip_forward=1 para actuar como enrutador)
     | 
-    \--scripts              (scripts varios)
+    |--scripts              (scripts varios)
+    \--src
+      |
+      |--bbOmxControlServer  (Servidor de reproduccion de media sobre omxplayer)
+      \--BanpberryController (Android App)
 
 
 
