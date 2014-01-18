@@ -1,0 +1,183 @@
+
+ Banpberry - Banshee 2013
+ 
+  mail: dbanshe@gmail.com
+ 
+ 
+ Documento Funcional
+
+
+   1. Overview
+   
+    Centro de ocio multimedia autónomo. Capaz de controlar y combinar muúltiples dispositivos USB (Wifi, Bluetooth, ...) y GPIO.
+    La funcionalidad principal es el control de dispositivos de luces LED a partir de vídeo y audio reproducido. Gestión y manejo simplificada a través de una aplicación Android. Centro de compartición multimedia multiprotocolo (HTTP, FTP, SMB, App Android, ...).
+ 
+ 
+  2. Hardware
+  
+    Hardware Minimo.
+    
+      - Raspberry Pi rev2
+      - Adaptador corriente USB.
+      - Tarjeta SD 32 Gb
+      - Adaptador Wifi (RTL8188CUS por el momento para compatibilidad con hostapd)
+      - Conexión electrónica a kit de luces. GPIO de la raspberry a entrada de LEDs sobre protoboard o placa específica.
+         
+    Hardware Adicional.
+      
+      - TV
+      - Cable HDMI
+      - Cable red cruzado
+      - Lector tarjeta SD
+      - Adaptador Bluetooth
+      - Teclado y Ratón USB
+      - Webcam (1080 p)
+      - Sphero
+      - Hub USBx7 2.0
+      - Cable MiniJack - Analógico
+      - Caja impresa en 3D. Estructura pseudo piramidal de segmentos por capas encajables, de manera que mediante altura y rotación ofrezca robusted.
+         
+         /\
+        /  \     Capa 3. WebCam
+       /----\     
+       |    |
+       |----|    Capa 2. Raspberry Pi
+       |    |    
+       |----|
+       |____|    Capa 3. Hub Usb y cables.
+      
+ 3. Requisitos 
+    
+      Conectividad
+        
+        Ofrecerá conectividad mediante un punto de acceso Wifi al que los dispositivos puedan conectarse. 
+        Opcionalmente mediante un 2º interfaz wifi o conectado mediante RJ45 podra disponer de conexión a internet.
+        
+        Posible Implementación
+            Crear punto de acceso Wifi mediante hostapd y servidor 
+            Montar servidor DHCP mediante dhcpd. 
+            Montar servidor SSH sshd.
+            Montar servidor DNS bind9.
+            Montar servidor HTTP httpd.
+            Montar servidor FTP vstftp.
+            Montar servidor VNC.
+            Montar firewall iptables.
+            Montar servidor socket para conexiónes rapidas y especificas. (Útil en el control de LEDs para interacción directa desde App Android, o interproceso a nivel interno de la Banpberry)
+            Montar servidor Web Service. (Util para intercambio de informacin compleja en aplicaciónes de Usuario Android como visualizacion de playlists, puntuaciones de juegos almacenados, intercambio de ficheros, reproducción de vídeos, ...)
+              Alternativa eficiente en cuanto a recursos para comunicacion entre Android y dispositivos de HW reducido. En este caso podemos evitar el despliegue de un servidor de Web Service (Java descartado desde el principio a falta de 
+              saber si el soporte de Java de la distribucion Linux utilizada (Raspbian, ... ) proporciona un entorno eficiente como Dalvik de Android o es un porte simple de Java x86 a ARM. C factible, Python factible y múltiples wrappers factibles.
+                por un sistema de comunicación basado en una conexión FTP o SSH entre una app Android que lea ficheros locales a la Banperry donde la misma vuelca información de su estado y escriba datos que serán leidos como entrada en la raspberry. 
+                Mediante FTP seria necesario un pequeño script que hiciera pooling sobre los ficheros de entrada (estilo /proc). 
+                Mediante SSH se podria implementar de manera asincrona, siendo la app Android la que invocaria un comando sync que haria que la Banpberry leyera los datos de entrada.
+            
+      
+      Compartición
+        
+        Ofrecerá capacidad de compartición de ficheros almacenados en la misma y en dispositivos en Red.
+        
+        Posible implementación
+          
+          SSH. Acceso ssh para desarroll y montaje de unidades por sshfs
+            Compartir de manera automática contenido de otros dispositivos mediante arranque en el inicio.
+            Desarrollo desde Pc sobre la Banpberry comodo
+          FTP con chroot para compartir y permitir acceso de escritura seguro.
+            vstftp no permite links simbólicos. Se soluciona montando link sobre rutas mediante /etc/fstab. Aqui se compartiran rutas generales de fotos, vídeos, musica, (desarrollo con diferente ambito de visibilidad)
+          HTTP para acceso desde cualquier navegador o movil.
+            Crear link simbólico sobre la carpeta FTP para el servidor httpd Apache. Apache sí navega por links y se mantienen unificados automáticamente los datos para ambos protocolos.
+            Es posible asi navegar por directorios y reproducir media desde cualquier movil o navegador con el plugin correctamente instalado (Lo habitual tanto en Navegadores Web, como moviles).
+          OwnCloud
+            Consultar en la Web.
+          Aplicación Android Especifica. Manejo de directorios, ficheros. Podría tener un frontend para la camara de fotos del movil que guarde copia en la Banpberry. Siendo asi repositorio de imagenes entre usos.
+            
+            
+      Control
+      
+        Ofrecerá capacidad de control y gestión.
+        
+        Posible implementación
+        
+          Teclado, Ratón y Pantalla.
+          Aplicación Android de Teclado y Raton Bluetooth
+          Aplicación Android Especifica
+      
+      
+      Reproducción de media
+        
+        Ofrecerá capacidad de reproducción de media interna, compartida e internet (Conexión opcional mediante 2º adaptador Wifi o RJ45)
+        
+        Posible implementación
+        
+          Control mediante Teclado, Raton y TV (DHMI o Analogico)
+          
+          Control mediante Android.
+            Control simple. Mediante un cliente ssh Android es posible acceder desde el movil y ejecutar media directamente de manera manual.
+            Control de reproduccion simple mediante Servicio. Una aplicación Android creara un Servicio de manera que este disponible para 2º aplicaciónes Android 
+              tipicamente instaladas ya (Google, Youtube, ...) el compartir. Al elegir este nuevo servicio como destino la URL le sera enviada
+              desde la App Android a la Banpberry mediante conexión socket o Web Service. (Es simple reproducir media mediante una url. vlc <url> funcióna.)
+            Control mediante App Android. Aplicación todo lo compleja que se quiera con navegacion de carpetas, listas de reproducción, Hall of The Fame ...
+          
+          Reproducción. omxplayer puede hacer en principio todo lo necesario aportando control por linea de comandos. Altamente versatil y escriptable. Ademas, por el momneto, es el unico que implementa decodificacion por HW para video sobre el procesador grafico
+            de la Raspberry.
+          
+          Fuentes. Todo lo local, compartido mediante sshfs desde otros dispositivos, todo lo accesible mediante URLs, conexión a internet y unidades USB.
+
+          
+      LEDs
+      
+        Ofrecerá capacidad de conexión de Kits de luces mediante adaptación a conexión GPIO en la raspberry.
+        Ofrecerá control de luces directo y generado software.
+        
+        Posible implementación.
+          Conexión de LEDs mediante protoboard y puerto GPIO de la raspberry.
+          
+          Control de luces mediante programa de linea de comandos y como aplicación Android. Librerias, wrappers, aplicación de consola, 
+            servidor de control unificado para un control desde la raspberry eficiente. Todo el proceso en ella. Trabajos internos y ordenes de conmutado 
+            simples desde Android (Menú de cambio de colores o modos predefinidos)
+            
+          Control Avanzado Android. Control de luces a partir de control directo de los sensores del movil. Giroscopios, acelerometros y pantalla. 
+            Necesario un control rápido desde los sensores a las luces. Esto podria ser posible con una peticion WS de una conexión socket para un control directo. HTTP para obtener un socket de control.
+            Mesa de mezclas Android.
+            Multiples juegos individuales y colectivos. Capacidad de almacenar partidas, records y visualizacion de los mismos.
+            
+          Control Software sobre media reproducida. Actuar sobre los LEDs en función de vídeo o audio reproducido. Esto es posible hacerlo de manera general
+            leyendo del buffer de vídeo donde escriba omxplayer  desde C y leer los colores de los pixels. Un análisis de la imagen en tiempo real sobre el color mayoritario de un
+            borde ancho de la imagen puede proporcionar el efecto ambiligth mientras se ve un vídeo en la Banpberry.
+            Sobre el audio leyendo del buffer de audio. (Alsa, PulseAudio) debe permitir el control de las luces desde la musica reproducida. Todos los algoritmos que se puedan ocurrir.
+            Siendo tan a bajo la nivel la obtención de los datos de audio o vídeo, es independiente de la aplicación que se utilice para la reproducción de los mismos.
+            
+          Múltiples variantes de kits de luces. Investigar.
+        
+        
+      Webcam
+      
+        Ofrecerá capacidad de grabación de vídeo (1080p) y fotos. Opcionalmente podria evaluarse el control mediante gestos simples.
+        
+          Posible implementación
+          
+            Grabación de vídeo desde control por consola o app Android. Videos compartidos y accesibles por FTP, HTTP, Android ...
+            Toma de fotos mediante consola, app Android. Compartidas y accesibles igualmente. Proceso automatico de toma de fotos a intervalos de tiempo.
+              Podría alertarse mediante una serie de pulsos en las luces LED para alertar y posar.
+        
+        
+      Spheros
+        
+        Ofrecerá capacidad de control de spheros en directo y generados por sofware.
+        
+        Posible implementación
+        
+          Control directo. Multiples APIs, C, Python, Ruby, .. Es sencillo portar funcionalidad desde Android. 
+          
+          Control por Software. Es posible incrementar el efecto ambilight de los leds mediante los spheros. Es posible jugar con su movimiento a partir 
+            de análisis de imagen o audio. Desde audio es posible aplicar filtros de paso baja y alta a la señal, aislando asi bajos y agudos. Sería 
+            interesante ver varios Spheros moviendose a un ritmo de graves y alternado colores y frecuencias de sus LEDs en función de los agudos.
+      
+      Karaoke
+      
+        Ofrecerá funcion de karaoke.
+        
+        Posible implementacion
+        
+          Aplicacion Android que use los microfonos de los moviles y envie el sonido a la Banpberry.
+            
+            
+Version 0.1 (Alpha)

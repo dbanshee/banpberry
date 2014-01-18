@@ -1,0 +1,19 @@
+#! /bin/bash
+
+#
+# Banshee 2013
+#
+
+# Tee stdin to log file.
+
+nParams=$#
+
+if [ $nParams -eq 0 ] ; then
+ exec bbOmxControlServer.py
+elif [ $nParams -eq 1  ] ; then
+ exec bbOmxControlServer.py $1
+else
+ echo "Loging bbOmxControlServer.py into $2 ..."
+  exec bbOmxControlServer.py $1 &>> $2
+fi
+

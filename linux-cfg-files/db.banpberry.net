@@ -1,0 +1,16 @@
+;
+; BIND reverse data file for local loopback interface
+;
+$TTL	604800
+@	IN	SOA	banpberry.net. root.banpberry.net. (
+			1		; Serial
+			604800		; Refresh
+			86400		; Retry
+			2419200		; Expire
+			604800 )	; Negative Cache TTL
+;
+@	IN	NS	banpberry.net.
+@	IN	A	192.168.15.1
+@	IN	MX 0	banpberry.net.
+www	IN	A	192.168.15.1
+

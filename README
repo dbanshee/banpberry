@@ -1,0 +1,53 @@
+############################
+# Banpberry Readme
+############################
+
+ Estructura de directorios
+
+  bb-root
+    |
+    |--doc                  (documentacion)
+    |--ext-src              (software externo)
+    | |
+    | |--hostapd-rasp       (Hack de hostapd para funcionar sobre RTL8188CUS)
+    | \--omxplayer          (Fuentes de omxplayer. Uso didactico. EL paquete raspbian sirve para los propositos requeridos)
+    |
+    |--linux-cfg-files      (ficheros de configuracion de software linux)
+    | |
+    | |--apache2.conf       (/etc/apache2)
+    | |--dhcpd.conf         (/etc/dhcp)
+    | |--fuse.conf	    (/etc/(fuse.conf)
+    | |--hostapd.conf       (/etc/hostapd)
+    | |--interfaces         (/etc/network)
+    | |--mopidy             (/home/pi/.config/mopidy/mopidy.conf)
+    | |--vsftpd.conf        (/etc)
+    | |--vsftpd.chroot_list (/etc)
+    | |--named.conf.local   (/etc/bind)
+    | |--db.banpberry.net   (/etc/bind)
+    | \--sysctl.conf        (/etc   net.ipv4.ip_forward=1 para actuar como enrutador)
+    | 
+    \--scripts              (scripts varios)
+
+
+
+
+ Dependencias:
+ 
+  - hostapd (Incluido en ext-src. No el paquete por defecto de raspbian)
+  - isc-dhcp-server
+  - vsftpd
+  - apache2
+  - bind9 (DNS Server)
+  - youtube-dl
+  - mopidy (Servidor MDP con soporte para spotify)
+
+ Opcionales
+  - lsof
+  - apt-file
+  - swatch
+  - sshfs (Modificar /etc/fuse.conf descomentando user_allow_other y montar con sshfs -o allow_other <dest> <mountpoint>)
+  - screen
+  - ntfs-3g
+  - fbi (framebuffer image picker)
+   
+
