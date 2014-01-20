@@ -425,7 +425,7 @@ s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 # Creacion de puerto de conexiones
 #host = "192.168.15.1"
 host = config["ip"]
-s.bind((host, port))        # Bind to the port
+s.bind(('', port))          # Bind to the port at any address. Same as 0.0.0.0
 s.listen(5)                 # Now wait for client connection.
 c = None
 
