@@ -8,13 +8,19 @@
  * Servidor de control de servicios general.
  */
 
+
+#include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
-#include <bits/signum.h>
 #include <signal.h>
+
 #include "../libs/serversocket.h"
 #include "../libs/logger.h"
+#include "../libs/procmanager.h"
+
+
+
 
 // Signal Handler
 void signalHandler(int sigNum);
@@ -23,9 +29,20 @@ void signalHandler(int sigNum);
 int controlHandler(int connfd);
 
 
+
+const char requestHeader [1024] = 
+"-------------------\n\
+- bbControlServer -\n\
+-------------------\n\
+Usage :\n\n\
+  START <service>\n\
+  STOP <service>\n\
+  RESTART <service>\n\
+BBCONTROL>";
+
+
 // Global vars
 serverSocketContext serverCtx;
-
 
 // Main Control Server
 int main(int argc, char* argv){
@@ -78,7 +95,7 @@ int controlHandler(int connfd){
     blog(LOG_INFO, "Handling request on Control Server.");
     
     // Write header & prompt
-    char* msg = "BBCONTROL>";
+    serverWriteBuffer(connfd, (char *) requestHeader, strlen(requestHeader));
     
     // Read line from socket
     blog(LOG_INFO, "Waiting client data ...");
@@ -87,17 +104,15 @@ int controlHandler(int connfd){
     if(nread == -1){
         blog(LOG_ERROR, "Error reading from client.");
     }else if(nread == 0){
-        msg = REQUEST_ERROR;
-        serverWriteBuffer(connfd, msg, strlen(msg));
+        serverWriteBuffer(connfd, REQUEST_ERROR, strlen(REQUEST_ERROR));
     }else{
         /* 
          * Process Request
          *  ... 
          */
-        
-        msg = REQUEST_OK;
-        serverWriteBuffer(connfd, msg, strlen(msg));
+        serverWriteBuffer(connfd, REQUEST_OK, strlen(REQUEST_OK));
     }
     
     return 0;
 }
+

@@ -1,4 +1,3 @@
-//#include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -14,7 +13,7 @@
 /*
  * Loop de ejecucion de escucha de conexiones.
  */
-int socketServerLoop(serverSocketContext* ctx){
+int socketServerLoop(serverSocketContext* serverCtx){
     
     struct sockaddr_in serv_addr;
     struct sockaddr_in client_addr;
@@ -23,73 +22,70 @@ int socketServerLoop(serverSocketContext* ctx){
     blog(LOG_INFO, "Initializing Server ... ");
     
     // Socket initialization
-    if((ctx->listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
+    if((serverCtx->listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
         blog(LOG_ERROR, "Error opening socket");
-        abortServer(ctx);
+        abortServer(serverCtx);
     }
     
     // Server address initialization
     memset(&serv_addr, '0', sizeof(serv_addr));
     serv_addr.sin_family      = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port        = htons(ctx->serverPort); 
+    serv_addr.sin_port        = htons(serverCtx->serverPort); 
     
     // Client address initialization
     clientLen = sizeof(client_addr);
 
     // Bind socket to address
-    if(bind(ctx->listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1){
+    if(bind(serverCtx->listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1){
         blog(LOG_ERROR, "Error binding socket");
-        abortServer(ctx);
+        abortServer(serverCtx);
     }
 
     // Listen queue
-    if(listen(ctx->listenfd, 10) == -1){
+    if(listen(serverCtx->listenfd, 10) == -1){
         blog(LOG_ERROR, "Error listen on socket");
-        abortServer(ctx);
+        abortServer(serverCtx);
     }
     
-    blog(LOG_INFO, "Server initialized on port : %d... ", ctx->serverPort);
+    blog(LOG_INFO, "Server initialized on port : %d... ", serverCtx->serverPort);
     
     // Conexion accept loop
-    while(ctx->serverLoop){
+    while(serverCtx->serverLoop){
         
         blog(LOG_INFO, "Waiting for connection ...");
-        
-        ctx->clientfd = accept(ctx->listenfd, (struct sockaddr *) &client_addr, &clientLen);
+        serverCtx->clientfd = accept(serverCtx->listenfd, (struct sockaddr *) &client_addr, &clientLen);
         
         /*
          * Se comprueba el estado del descriptor del socket. Si esta cerrado, se ignora el accept,
          * puesto que provendra de la terminacion del servidor. close() en finishServer() 
          */
-        if(fcntl(ctx->listenfd, F_GETFL) != -1){
-        
-            if(ctx->clientfd == -1) 
-                blog(LOG_ERROR, "Error on accept");
-
+        if(fcntl(serverCtx->listenfd, F_GETFL) != -1){
             blog(LOG_INFO, "Conexion received at port : %d", ntohs(client_addr.sin_port));
-
-            // Request process
-            ctx->requestHandler(ctx->clientfd);
+            
+            if(serverCtx->clientfd == -1)
+                blog(LOG_ERROR, "Error on accept");
+            else
+                serverCtx->requestHandler(serverCtx->clientfd); // Request process
 
             // Close client socket
-            close(ctx->clientfd);
+            close(serverCtx->clientfd);
         }
     }
 }
 
-void finishServer(serverSocketContext* ctx){
+void finishServer(serverSocketContext* serverCtx){
     blog(LOG_INFO, "Finishing Server ...");
-    ctx->serverLoop = 0;
-    close(ctx->listenfd); // Close sobre el desc del socket fuerza la terminacion del bloqueo en el accept.
-    close(ctx->clientfd);  // Close sobre la conexion del cliente activa
+    serverCtx->serverLoop = 0;
+    close(serverCtx->listenfd);  // Close sobre el desc del socket fuerza la terminacion del bloqueo en el accept.
+    close(serverCtx->clientfd);  // Close sobre la conexion del cliente activa
 }
 
-void abortServer(serverSocketContext* ctx){
+void abortServer(serverSocketContext* serverCtx){
     blog(LOG_ERROR, "Aborting Server ...");
-    ctx->serverLoop = 0;
-    close(ctx->listenfd); // Close sobre el desc del socket fuerza la terminacion del bloqueo en el accept.
-    close(ctx->clientfd);  // Close sobre la conexion del cliente activa
+    serverCtx->serverLoop = 0;
+    close(serverCtx->listenfd);  // Close sobre el desc del socket fuerza la terminacion del bloqueo en el accept.
+    close(serverCtx->clientfd);  // Close sobre la conexion del cliente activa
     exit(-1);
 }
 
@@ -112,7 +108,7 @@ ssize_t serverReadBuffer(int connfd, char* buff, size_t buffSize){
         return 0;
     }else{
         cleanLine(buff);
-        blog(LOG_INFO, "Client Request : (bytes : %d) '%s'", nread, buff);
+        blog(LOG_DEBUG, "Client Request : (bytes : %d) '%s'", nread, buff);
         return nread;
     }
 }
@@ -131,7 +127,7 @@ ssize_t serverWriteBuffer(int connfd, char* buff, size_t buffSize){
         blog(LOG_ERROR, "Error sending buffer.");
         return -1;
     }else{
-        blog(LOG_INFO, "Server Response : (bytes : %d) '%s'", nwrite, buff);
+        blog(LOG_DEBUG, "Server Response : (bytes : %d) '%s'", nwrite, buff);
         return nwrite;
     }
 }
@@ -143,5 +139,5 @@ void cleanLine(char* line){
         line[(nread--)-1] = '\0';
         
     if(nread > 0 && line[nread-1] == '\r')
-        line[(nread--)-1] = '\0';
+        line[(nread--)-1] = '\0';   
 }

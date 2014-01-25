@@ -8,7 +8,7 @@ bbMediaServer.o : bbMediaServer.c
 
 
 all : bbControlServer.o #bbMediaServer.o
-	 gcc bbControlServer.o ../libs/serversocket.o ../libs/logger.o -o bbControlServer
+	 gcc bbControlServer.o ../libs/serversocket.o ../libs/logger.o ../libs/procmanager.o -o bbControlServer
 #	 gcc bbMediaServer.o ../libs/serversocket.o -o bbMediaServer
 
 clean:

@@ -5,6 +5,8 @@
       <df name="libs">
         <in>logger.c</in>
         <in>logger.h</in>
+        <in>procmanager.c</in>
+        <in>procmanager.h</in>
         <in>serversocket.c</in>
         <in>serversocket.h</in>
       </df>

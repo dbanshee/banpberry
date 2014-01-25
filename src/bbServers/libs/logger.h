@@ -16,9 +16,7 @@
 #define LOG_ERROR 3
 
 char* getCurrentDate();
-
-//void blog(int level, char* msg);
-void blog(int level, char* format, ...);
+void  blog(int level, char* format, ...);
 
 
 #endif	/* LOGGER_H */
