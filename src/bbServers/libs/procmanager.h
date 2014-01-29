@@ -26,19 +26,19 @@
 
 typedef struct processContext {
     pid_t  pid;
-    char*  binPath;
-    char** args;
+    char   *binPath;
+    char   **args;
     int    status;
     int    fd [2];
 } processContext;
 
 
-void initializeProcessContex(processContext* procCtx);
-void createProcess(processContext* procCtx);
-void waitProcess(processContext* procCtx);
+void initializeProcessContex(processContext *procCtx);
+void createProcess(processContext *procCtx);
+void waitProcess(processContext *procCtx);
 
-int sendToProcess(processContext*   procCtx, char* buff, size_t buffSize);
-int readFromProcess(processContext* procCtx, char* buff, size_t buffSize);
+int sendToProcess(processContext   *procCtx, char *buff, size_t buffSize);
+int readFromProcess(processContext *procCtx, char *buff, size_t buffSize);
 
 static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2);
 

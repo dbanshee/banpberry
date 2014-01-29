@@ -13,7 +13,7 @@
 
 
 
-void initializeProcessContex(processContext* procCtx){
+void initializeProcessContex(processContext *procCtx){
     procCtx->binPath    = NULL;
     procCtx->args       = NULL;
     procCtx->status     = UNINITIALIZED;
@@ -21,7 +21,7 @@ void initializeProcessContex(processContext* procCtx){
 }
 
 
-void createProcess(processContext* procCtx){
+void createProcess(processContext *procCtx){
 
     int p_stdin[2], p_stdout[2];
     pid_t pid;
@@ -29,6 +29,7 @@ void createProcess(processContext* procCtx){
     // Create 2 pipes
     if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0){
         blog(LOG_ERROR, "Error creating pipes for subprocess");
+        procCtx->status = ERROR;
         return;
     }
     
@@ -37,6 +38,7 @@ void createProcess(processContext* procCtx){
     
     if(pid < 0){
         blog(LOG_ERROR, "Error creating subprocess");
+        procCtx->status = ERROR;
         return;
     }else if(pid == 0){
         // Child
@@ -47,7 +49,8 @@ void createProcess(processContext* procCtx){
         // Se cierran todos los descriptores del proceso excepto los (0,1,2) y los extremos necesarios de la pipe
         if(closeNonStdDescriptors(getpid(), p_stdin[READ], p_stdout[WRITE]) == -1){
             blog(LOG_ERROR, "Error Closing non std descriptors.");
-            return;
+            procCtx->status = ERROR;
+            exit(-1);
         }
         
         // Se asocian las pipes a la entrada y salida estandar  y se redirige el error estandar a la salida estandar
@@ -56,7 +59,8 @@ void createProcess(processContext* procCtx){
            dup2(p_stdout[WRITE], STDERR) == -1 ){
             
             blog(LOG_ERROR, "Error asociating std to pipes");
-            return;
+            procCtx->status = ERROR;
+            exit(-1);
         }
       
         close(p_stdin[READ]);
@@ -64,15 +68,16 @@ void createProcess(processContext* procCtx){
 
         
         // Se cambia la imagen del proceso
+        procCtx->status = RUNNING;
         if(execvp(procCtx->binPath, procCtx->args) == -1){
             blog(LOG_ERROR, "Error changing image of subprocess");
-            return;
+            procCtx->status = ERROR;
+            exit(-1);
         }
         
     }else{
         // Parent
         procCtx->pid    = pid;
-        procCtx->status = RUNNING;
         procCtx->fd[0]  = p_stdin[WRITE];
         procCtx->fd[1]  = p_stdout[READ];
         
@@ -83,40 +88,30 @@ void createProcess(processContext* procCtx){
 
 static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2){
     char procDirPath [256];
-    DIR* dp;
-    struct dirent * dirEntry;
+    DIR *dp;
+    struct dirent *dirEntry;
     int efd;
     
-    char c;
-    
     sprintf(procDirPath, "/proc/%d/fd", pid);
-    
-    //blog(LOG_DEBUG, "FD PATH : %s", procDirPath);
     
     if((dp = opendir(procDirPath)) == NULL){
         blog(LOG_ERROR, "Error opening %s directory.", pid);
         return -1;
     }
     
-//    blog(LOG_DEBUG, "Reading directory\n");
     while((dirEntry = readdir(dp)) != NULL){
         efd = atoi(dirEntry->d_name);
         
-//        blog(LOG_DEBUG, "fd : %s, %d\n", dirEntry->d_name, efd);
-//        scanf("%c", &c);
-        
         // Se cierran todos los descriptores no estandar, excepto los 2 pasados como argumento y el que se esta usando para navegar por los mismos
-        if(efd > 2 && efd != fd1 && efd != fd2 && efd != dirfd(dp)){
-//            blog(LOG_DEBUG, "Closing fd: %s, %d\n", dirEntry->d_name, efd);
+        if(efd > 2 && efd != fd1 && efd != fd2 && efd != dirfd(dp))
             close(atoi(dirEntry->d_name));
-        }
     }
     
     closedir(dp);
     return 1;
 }
 
-void waitProcess(processContext* procCtx){
+void waitProcess(processContext *procCtx){
     pid_t pid;
     int status;
     
@@ -147,7 +142,7 @@ void waitProcess(processContext* procCtx){
     }
 }
 
-int getProcessStatus(processContext* procCtx){
+int getProcessStatus(processContext *procCtx){
     pid_t pid;
     int status;
     
@@ -185,7 +180,7 @@ int getProcessStatus(processContext* procCtx){
     return procCtx->status;
 }
 
-ssize_t readFromProcess(processContext* procCtx, char* buff, size_t buffSize){
+ssize_t readFromProcess(processContext *procCtx, char *buff, size_t buffSize){
     
     if(fcntl(procCtx->fd[1], F_GETFL) == -1){
         blog(LOG_ERROR, "Error. Read process pipe is not ready.");
@@ -209,7 +204,7 @@ ssize_t readFromProcess(processContext* procCtx, char* buff, size_t buffSize){
     }
 }
 
-ssize_t sendToProcess(processContext* procCtx, char* buff, size_t buffSize){
+ssize_t sendToProcess(processContext *procCtx, char *buff, size_t buffSize){
     
     if(fcntl(procCtx->fd[0], F_GETFL) == -1){
         blog(LOG_ERROR, "Error. Write process pipe is not ready.");

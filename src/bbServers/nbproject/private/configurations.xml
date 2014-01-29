@@ -9,6 +9,8 @@
         <in>procmanager.h</in>
         <in>serversocket.c</in>
         <in>serversocket.h</in>
+        <in>stringutils.c</in>
+        <in>stringutils.h</in>
       </df>
       <df name="servers">
         <in>bbControlServer.c</in>

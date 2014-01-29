@@ -42,11 +42,11 @@ void signalHandler(int sigNum);
 int controlHandler(int connfd);
 
 // Control Services Handlers
-void omxplayerServiceHandler(char** args, int nargs);
-void vlcServiceHandler(char** args, int nargs);
-void mopidyServiceHandler(char** args, int nargs);
-void apacheServiceHandler(char** args, int nargs);
-void ftpServiceHandler(char** args, int nargs);
+int omxplayerServiceHandler(char **args, int nargs);
+int vlcServiceHandler(char **args, int nargs);
+int mopidyServiceHandler(char **args, int nargs);
+int apacheServiceHandler(char **args, int nargs);
+int ftpServiceHandler(char **args, int nargs);
 
 
 const char requestHeader [1024] = 
@@ -66,7 +66,7 @@ BBCONTROL>";
 serverSocketContext serverCtx;
 
 // Main Control Server
-int main(int argc, char* argv){
+int main(int argc, char *argv){
     
     // Signal Handlers
     signal(SIGTERM, signalHandler);
@@ -142,26 +142,26 @@ int controlHandler(int connfd){
                 (nargs == 2 || strcasecmp(spl[2], FORCE) == 0))){
                 
                 if(strcasecmp(OMXPLAYER_SERVICE, spl[1]) == 0)
-                    omxplayerServiceHandler(spl, nargs);
+                    requestError = omxplayerServiceHandler(spl, nargs);
                 else if(strcasecmp(VLC_SERVICE, spl[1]) == 0)
-                    vlcServiceHandler(spl, nargs);
+                    requestError = vlcServiceHandler(spl, nargs);
                 else if(strcasecmp(MOPIDY_SERVICE, spl[1]) == 0)
-                    mopidyServiceHandler(spl, nargs);
+                    requestError = mopidyServiceHandler(spl, nargs);
                 else if(strcasecmp(APACHE_SERVICE, spl[1]) == 0)
-                    apacheServiceHandler(spl, nargs);
+                    requestError = apacheServiceHandler(spl, nargs);
                 else if(strcasecmp(FTP_SERVICE, spl[1]) == 0)
-                    ftpServiceHandler(spl, nargs);
+                    requestError = ftpServiceHandler(spl, nargs);
                 else
-                    requestError = 1;
+                    requestError = -1;
             }else{
                 serverWriteBuffer(connfd, REQUEST_ERROR, strlen(REQUEST_ERROR));
-                requestError = 1;
+                requestError = -1;
             }
         }
         
         free(spl);
         
-        if(requestError)
+        if(requestError == -1)
             serverWriteBuffer(connfd, REQUEST_ERROR, strlen(REQUEST_ERROR));
         else
             serverWriteBuffer(connfd, REQUEST_OK, strlen(REQUEST_OK)); 
@@ -171,19 +171,19 @@ int controlHandler(int connfd){
 }
 
 
-void genericScriptServiceHandler(){
+int genericScriptServiceHandler(){
 
 }
 
-void omxplayerServiceHandler(char** args, int nargs){
+int omxplayerServiceHandler(char **args, int nargs){
 
 }
 
-void vlcServiceHandler(char** args, int nargs){
+int vlcServiceHandler(char **args, int nargs){
 
 }
 
-void mopidyServiceHandler(char** args, int nargs){
+int mopidyServiceHandler(char **args, int nargs){
     processContext procCtx;
     initializeProcessContex(&procCtx);
     
@@ -202,15 +202,19 @@ void mopidyServiceHandler(char** args, int nargs){
         procCtx.args[3] = NULL;
     
     createProcess(&procCtx);
-    waitProcess(&procCtx);
+    
+    if(procCtx.status == RUNNING)
+        waitProcess(&procCtx);
+    else
+        blog(LOG_ERROR, "Error executing Mopidy Service");
     
     free(procCtx.args);
 }
 
-void apacheServiceHandler(char** args, int nargs){
+int apacheServiceHandler(char **args, int nargs){
 
 }
 
-void ftpServiceHandler(char** args, int nargs){
+int ftpServiceHandler(char **args, int nargs){
 
 }

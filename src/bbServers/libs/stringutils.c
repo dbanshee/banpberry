@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 
-void cleanLine(char* line){
+void cleanLine(char *line){
     int nread = strlen(line);
     
     if(nread > 0 && line[nread-1] == '\n')
@@ -16,10 +16,10 @@ void cleanLine(char* line){
 
 // Not Thread safe!!
 // Need to free
-char** splitLine(char* line, char* delim){
+char **splitLine(char *line, char *delim){
     int maxSize = 16;
     
-    char** splitedLine = (char**) malloc(sizeof(char*)*maxSize);
+    char **splitedLine = (char**) malloc(sizeof(char*)*maxSize);
     memset(splitedLine, 0, sizeof(char*)*maxSize);
     
     int cnt     = 0;

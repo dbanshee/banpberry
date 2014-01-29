@@ -5,7 +5,7 @@
 #include <stdarg.h>
 
 
-char* getCurrentDate(){
+char *getCurrentDate(){
     time_t t;
     time(&t);
     
@@ -32,7 +32,7 @@ char* getCurrentDate(){
  * 
  * void blog(int level, char* format, ...){}
  */
-void blog(int level, char* format, ...){
+void blog(int level, char *format, ...){
     char msg[1024];
     
     va_list argptr;

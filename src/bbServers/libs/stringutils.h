@@ -11,8 +11,8 @@
 
 #include <string.h>
 
-void cleanLine(char* line);
-char** splitLine(char* line, char* delim);
+void cleanLine(char *line);
+char **splitLine(char *line, char *delim);
 
 #endif	/* STRINGUTILS_H */
 

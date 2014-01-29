@@ -9,6 +9,8 @@
         <in>procmanager.h</in>
         <in>serversocket.c</in>
         <in>serversocket.h</in>
+        <in>stringutils.c</in>
+        <in>stringutils.h</in>
       </df>
       <df name="servers">
         <in>bbControlServer.c</in>
@@ -56,6 +58,10 @@
       <item path="libs/serversocket.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="libs/serversocket.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="libs/stringutils.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="libs/stringutils.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="servers/bbControlServer.c" ex="false" tool="0" flavor2="0">
       </item>

@@ -13,7 +13,7 @@
 /*
  * Loop de ejecucion de escucha de conexiones.
  */
-int socketServerLoop(serverSocketContext* serverCtx){
+int socketServerLoop(serverSocketContext *serverCtx){
     
     struct sockaddr_in serv_addr;
     struct sockaddr_in client_addr;
@@ -53,7 +53,7 @@ int socketServerLoop(serverSocketContext* serverCtx){
     // Conexion accept loop
     while(serverCtx->serverLoop){
         
-     blog(LOG_INFO, "Waiting for connection ...");
+        blog(LOG_INFO, "Waiting for connection ...");
         memset(&client_addr, 0, sizeof(struct sockaddr_in));
         serverCtx->clientfd = accept(serverCtx->listenfd, (struct sockaddr *) &client_addr, &clientLen);
         
@@ -76,14 +76,14 @@ int socketServerLoop(serverSocketContext* serverCtx){
     }
 }
 
-void finishServer(serverSocketContext* serverCtx){
+void finishServer(serverSocketContext *serverCtx){
     blog(LOG_INFO, "Finishing Server ...");
     serverCtx->serverLoop = 0;
     close(serverCtx->listenfd);  // Close sobre el desc del socket fuerza la terminacion del bloqueo en el accept.
     close(serverCtx->clientfd);  // Close sobre la conexion del cliente activa
 }
 
-void abortServer(serverSocketContext* serverCtx){
+void abortServer(serverSocketContext *serverCtx){
     blog(LOG_ERROR, "Aborting Server ...");
     serverCtx->serverLoop = 0;
     close(serverCtx->listenfd);  // Close sobre el desc del socket fuerza la terminacion del bloqueo en el accept.
@@ -95,7 +95,7 @@ void abortServer(serverSocketContext* serverCtx){
 //    serverReadBuffer(connfd, buff, strlen(buff));
 //}
 
-ssize_t serverReadBuffer(int connfd, char* buff, size_t buffSize){
+ssize_t serverReadBuffer(int connfd, char *buff, size_t buffSize){
     
     if(fcntl(connfd, F_GETFL) == -1){
         blog(LOG_ERROR, "Error. Input server socket is not ready.");
@@ -121,7 +121,7 @@ ssize_t serverReadBuffer(int connfd, char* buff, size_t buffSize){
 
 
 
-ssize_t serverWriteBuffer(int connfd, char* buff, size_t buffSize){
+ssize_t serverWriteBuffer(int connfd, char *buff, size_t buffSize){
     
     if(fcntl(connfd, F_GETFL) == -1){
         blog(LOG_ERROR, "Error. Output server socket is not ready.");
