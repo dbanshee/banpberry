@@ -53,7 +53,8 @@ int socketServerLoop(serverSocketContext* serverCtx){
     // Conexion accept loop
     while(serverCtx->serverLoop){
         
-        blog(LOG_INFO, "Waiting for connection ...");
+     blog(LOG_INFO, "Waiting for connection ...");
+        memset(&client_addr, 0, sizeof(struct sockaddr_in));
         serverCtx->clientfd = accept(serverCtx->listenfd, (struct sockaddr *) &client_addr, &clientLen);
         
         /*
@@ -70,7 +71,8 @@ int socketServerLoop(serverSocketContext* serverCtx){
 
             // Close client socket
             close(serverCtx->clientfd);
-        }
+        }else if(serverCtx->serverLoop == 1)
+            blog(LOG_ERROR, "Error. Bad socket listen descriptor");
     }
 }
 
@@ -88,6 +90,10 @@ void abortServer(serverSocketContext* serverCtx){
     close(serverCtx->clientfd);  // Close sobre la conexion del cliente activa
     exit(-1);
 }
+
+//ssize_t serverReadBuffer(int connfd, char* buff){
+//    serverReadBuffer(connfd, buff, strlen(buff));
+//}
 
 ssize_t serverReadBuffer(int connfd, char* buff, size_t buffSize){
     
@@ -113,6 +119,8 @@ ssize_t serverReadBuffer(int connfd, char* buff, size_t buffSize){
     }
 }
 
+
+
 ssize_t serverWriteBuffer(int connfd, char* buff, size_t buffSize){
     
     if(fcntl(connfd, F_GETFL) == -1){
@@ -120,6 +128,9 @@ ssize_t serverWriteBuffer(int connfd, char* buff, size_t buffSize){
         return -1;
     }   
     
+    if(buffSize == -1)
+        buffSize = strlen(buff);
+        
     size_t nwrite = write(connfd, buff, buffSize);
     //fflush(connfd); ?
     
@@ -132,12 +143,7 @@ ssize_t serverWriteBuffer(int connfd, char* buff, size_t buffSize){
     }
 }
 
-void cleanLine(char* line){
-    int nread = strlen(line);
-    
-    if(nread > 0 && line[nread-1] == '\n')
-        line[(nread--)-1] = '\0';
-        
-    if(nread > 0 && line[nread-1] == '\r')
-        line[(nread--)-1] = '\0';   
-}
+//ssize_t serverWriteBuffer(int connfd, char* buff){
+//    serverWriteBuffer(connfd, buff, strlen(buff));
+//}
+

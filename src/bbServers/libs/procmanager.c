@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdlib.h>
+#include <dirent.h>
 
 
 #include "procmanager.h"
@@ -43,6 +44,12 @@ void createProcess(processContext* procCtx){
         close(p_stdin[WRITE]);
         close(p_stdout[READ]);
         
+        // Se cierran todos los descriptores del proceso excepto los (0,1,2) y los extremos necesarios de la pipe
+        if(closeNonStdDescriptors(getpid(), p_stdin[READ], p_stdout[WRITE]) == -1){
+            blog(LOG_ERROR, "Error Closing non std descriptors.");
+            return;
+        }
+        
         // Se asocian las pipes a la entrada y salida estandar  y se redirige el error estandar a la salida estandar
         if(dup2(p_stdin[READ],   STDIN)  == -1 || 
            dup2(p_stdout[WRITE], STDOUT) == -1 ||
@@ -74,6 +81,40 @@ void createProcess(processContext* procCtx){
     }    
 }
 
+static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2){
+    char procDirPath [256];
+    DIR* dp;
+    struct dirent * dirEntry;
+    int efd;
+    
+    char c;
+    
+    sprintf(procDirPath, "/proc/%d/fd", pid);
+    
+    //blog(LOG_DEBUG, "FD PATH : %s", procDirPath);
+    
+    if((dp = opendir(procDirPath)) == NULL){
+        blog(LOG_ERROR, "Error opening %s directory.", pid);
+        return -1;
+    }
+    
+//    blog(LOG_DEBUG, "Reading directory\n");
+    while((dirEntry = readdir(dp)) != NULL){
+        efd = atoi(dirEntry->d_name);
+        
+//        blog(LOG_DEBUG, "fd : %s, %d\n", dirEntry->d_name, efd);
+//        scanf("%c", &c);
+        
+        // Se cierran todos los descriptores no estandar, excepto los 2 pasados como argumento y el que se esta usando para navegar por los mismos
+        if(efd > 2 && efd != fd1 && efd != fd2 && efd != dirfd(dp)){
+//            blog(LOG_DEBUG, "Closing fd: %s, %d\n", dirEntry->d_name, efd);
+            close(atoi(dirEntry->d_name));
+        }
+    }
+    
+    closedir(dp);
+    return 1;
+}
 
 void waitProcess(processContext* procCtx){
     pid_t pid;
@@ -81,6 +122,9 @@ void waitProcess(processContext* procCtx){
     
     blog(LOG_INFO, "Waiting end of process pid : %d", procCtx->pid);
     pid = waitpid(procCtx->pid, &status, 0);
+    
+    close(procCtx->fd[0]);
+    close(procCtx->fd[1]);
     
     if(pid == 0){
         blog(LOG_INFO, "Blocking Wait for process pid %d return 0. Anormal case.", procCtx->pid);
@@ -126,9 +170,15 @@ int getProcessStatus(processContext* procCtx){
             }else
                 blog(LOG_ERROR, "Process pid : %d exited anormally.", procCtx->pid);
             
+            close(procCtx->fd[0]);
+            close(procCtx->fd[1]);
+            
         }else{
             blog(LOG_ERROR, "Error waiting process pid : %d ", procCtx->pid);
             procCtx->status = ERROR;
+            
+            close(procCtx->fd[0]);
+            close(procCtx->fd[1]);
         }
     }
     
@@ -137,15 +187,15 @@ int getProcessStatus(processContext* procCtx){
 
 ssize_t readFromProcess(processContext* procCtx, char* buff, size_t buffSize){
     
-    if(fcntl(procCtx->fd[0], F_GETFL) == -1){
+    if(fcntl(procCtx->fd[1], F_GETFL) == -1){
         blog(LOG_ERROR, "Error. Read process pipe is not ready.");
         return -1;
     }
     
     memset(buff, 0, buffSize);
-    ssize_t nread = read(procCtx->fd[0], buff, buffSize);
+    ssize_t nread = read(procCtx->fd[1], buff, buffSize);
     
-    if(fcntl(procCtx->fd[0], F_GETFL) == -1){
+    if(fcntl(procCtx->fd[1], F_GETFL) == -1){
         blog(LOG_ERROR, "Error. Read Process pipe is not ready.");
         return -1;
     }else if(nread == -1){

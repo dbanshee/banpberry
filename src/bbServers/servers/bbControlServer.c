@@ -15,10 +15,23 @@
 #include <string.h>
 #include <signal.h>
 
+#include "../libs/stringutils.h"
 #include "../libs/serversocket.h"
 #include "../libs/logger.h"
 #include "../libs/procmanager.h"
 
+#define START_COMMAND           "START"
+#define STOP_COMMAND            "STOP"
+#define RESTART_COMMAND         "RESTART"
+#define FORCE_COMMAND           "RESTART"
+
+#define FORCE                   "FORCE"
+
+#define OMXPLAYER_SERVICE       "OMXPLAYER"
+#define VLC_SERVICE             "VLC"
+#define MOPIDY_SERVICE          "MOPIDY"
+#define APACHE_SERVICE          "APACHE"
+#define FTP_SERVICE             "FTP"
 
 
 
@@ -28,6 +41,12 @@ void signalHandler(int sigNum);
 // Manejador de peticion de conexion
 int controlHandler(int connfd);
 
+// Control Services Handlers
+void omxplayerServiceHandler(char** args, int nargs);
+void vlcServiceHandler(char** args, int nargs);
+void mopidyServiceHandler(char** args, int nargs);
+void apacheServiceHandler(char** args, int nargs);
+void ftpServiceHandler(char** args, int nargs);
 
 
 const char requestHeader [1024] = 
@@ -36,8 +55,10 @@ const char requestHeader [1024] =
 -------------------\n\
 Usage :\n\n\
   START <service>\n\
-  STOP <service>\n\
-  RESTART <service>\n\
+  STOP <service> [FORCE]\n\
+  RESTART <service> [FORCE]\n\
+\
+     service = OMXPLAYER|VLC|MOPIDY|APACHE|FTP\n\
 BBCONTROL>";
 
 
@@ -106,13 +127,90 @@ int controlHandler(int connfd){
     }else if(nread == 0){
         serverWriteBuffer(connfd, REQUEST_ERROR, strlen(REQUEST_ERROR));
     }else{
-        /* 
-         * Process Request
-         *  ... 
-         */
-        serverWriteBuffer(connfd, REQUEST_OK, strlen(REQUEST_OK));
+   
+        // Process request
+        int requestError = 0;
+        
+        char** spl = splitLine(line, " \n");
+        int nargs  = 0;
+        while(spl[nargs] != NULL) nargs++;
+        
+        if(nargs >= 2 && nargs <= 3){
+            
+            if((strcasecmp(START_COMMAND,  spl[0]) == 0 && nargs == 2) || 
+               ((strcasecmp(STOP_COMMAND,  spl[0]) == 0 || strcasecmp(RESTART_COMMAND, spl[0]) == 0) && 
+                (nargs == 2 || strcasecmp(spl[2], FORCE) == 0))){
+                
+                if(strcasecmp(OMXPLAYER_SERVICE, spl[1]) == 0)
+                    omxplayerServiceHandler(spl, nargs);
+                else if(strcasecmp(VLC_SERVICE, spl[1]) == 0)
+                    vlcServiceHandler(spl, nargs);
+                else if(strcasecmp(MOPIDY_SERVICE, spl[1]) == 0)
+                    mopidyServiceHandler(spl, nargs);
+                else if(strcasecmp(APACHE_SERVICE, spl[1]) == 0)
+                    apacheServiceHandler(spl, nargs);
+                else if(strcasecmp(FTP_SERVICE, spl[1]) == 0)
+                    ftpServiceHandler(spl, nargs);
+                else
+                    requestError = 1;
+            }else{
+                serverWriteBuffer(connfd, REQUEST_ERROR, strlen(REQUEST_ERROR));
+                requestError = 1;
+            }
+        }
+        
+        free(spl);
+        
+        if(requestError)
+            serverWriteBuffer(connfd, REQUEST_ERROR, strlen(REQUEST_ERROR));
+        else
+            serverWriteBuffer(connfd, REQUEST_OK, strlen(REQUEST_OK)); 
     }
     
     return 0;
 }
 
+
+void genericScriptServiceHandler(){
+
+}
+
+void omxplayerServiceHandler(char** args, int nargs){
+
+}
+
+void vlcServiceHandler(char** args, int nargs){
+
+}
+
+void mopidyServiceHandler(char** args, int nargs){
+    processContext procCtx;
+    initializeProcessContex(&procCtx);
+    
+    
+    procCtx.binPath    = "/bin/bash";
+    procCtx.args       = (char**) malloc(sizeof(char*)*5);
+    
+    procCtx.args[0] = "/bin/bash";
+    procCtx.args[1] = "/bb/scripts/bbServices/bbMopidy.sh";
+    procCtx.args[2] = args[0];
+    
+    if(nargs == 3){
+        procCtx.args[3] = args[2]; // Opcion FORCE
+        procCtx.args[4] = NULL;
+    }else
+        procCtx.args[3] = NULL;
+    
+    createProcess(&procCtx);
+    waitProcess(&procCtx);
+    
+    free(procCtx.args);
+}
+
+void apacheServiceHandler(char** args, int nargs){
+
+}
+
+void ftpServiceHandler(char** args, int nargs){
+
+}

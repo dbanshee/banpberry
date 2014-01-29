@@ -1,3 +1,6 @@
+stringutils.o : stringutils.c
+	gcc -c stringutils.c
+
 serversocket.o : serversocket.c
 	gcc -c serversocket.c
 	
@@ -7,7 +10,7 @@ logger.o : logger.c
 procmanager.o : procmanager.c
 	gcc -c procmanager.c
 
-all: serversocket.o logger.o procmanager.o
+all: stringutils.o serversocket.o logger.o procmanager.o
 
 clean :
 	rm -rf *.o
