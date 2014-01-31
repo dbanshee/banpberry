@@ -61,7 +61,7 @@ int socketServerLoop(serverSocketContext *serverCtx){
          * Se comprueba el estado del descriptor del socket. Si esta cerrado, se ignora el accept,
          * puesto que provendra de la terminacion del servidor. close() en finishServer() 
          */
-        if(fcntl(serverCtx->listenfd, F_GETFL) != -1){
+        if(fcntl(serverCtx->listenfd, F_GETFL) != -1 && serverCtx->clientfd != -1){
             blog(LOG_INFO, "Conexion received at port : %d", ntohs(client_addr.sin_port));
             
             if(serverCtx->clientfd == -1)

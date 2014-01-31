@@ -20,6 +20,10 @@ void initializeProcessContex(processContext *procCtx){
     memset(procCtx->fd, 0, sizeof(char)*2);
 }
 
+void sprintSOCommand(char *str, ssize_t buffSize, processContext *procCtx){
+    
+}
+
 
 void createProcess(processContext *procCtx){
 
@@ -66,6 +70,9 @@ void createProcess(processContext *procCtx){
         close(p_stdin[READ]);
         close(p_stdout[WRITE]);
 
+        // Print SO Command
+        char soCmd [2048];
+        
         
         // Se cambia la imagen del proceso
         procCtx->status = RUNNING;
@@ -210,6 +217,9 @@ ssize_t sendToProcess(processContext *procCtx, char *buff, size_t buffSize){
         blog(LOG_ERROR, "Error. Write process pipe is not ready.");
         return -1;
     }   
+    
+    if(buffSize == -1)
+        buffSize = strlen(buff);
     
     size_t nwrite = write(procCtx->fd[0], buff, buffSize);
     

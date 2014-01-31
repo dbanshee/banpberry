@@ -23,8 +23,6 @@
 #define START_COMMAND           "START"
 #define STOP_COMMAND            "STOP"
 #define RESTART_COMMAND         "RESTART"
-#define FORCE_COMMAND           "RESTART"
-
 #define FORCE                   "FORCE"
 
 #define OMXPLAYER_SERVICE       "OMXPLAYER"
