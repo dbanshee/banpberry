@@ -32,16 +32,13 @@ typedef struct processContext {
     int    fd [2];
 } processContext;
 
-
+// Public Functions
 void initializeProcessContex(processContext *procCtx);
 void createProcess(processContext *procCtx);
 void waitProcess(processContext *procCtx);
 
 int sendToProcess(processContext   *procCtx, char *buff, size_t buffSize);
 int readFromProcess(processContext *procCtx, char *buff, size_t buffSize);
-
-static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2);
-
 
 #endif	/* PROCMANAGER_H */
 

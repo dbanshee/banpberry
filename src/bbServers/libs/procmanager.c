@@ -11,6 +11,12 @@
 #include "procmanager.h"
 #include "logger.h"
 
+#define MAXBUFF      1024
+#define MAXSOCMDSIZE 4096
+
+
+static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2);
+static void sprintSOCommand(char *str, ssize_t buffSize, processContext *procCtx);
 
 
 void initializeProcessContex(processContext *procCtx){
@@ -20,13 +26,23 @@ void initializeProcessContex(processContext *procCtx){
     memset(procCtx->fd, 0, sizeof(char)*2);
 }
 
-void sprintSOCommand(char *str, ssize_t buffSize, processContext *procCtx){
+static void sprintSOCommand(char *str, ssize_t buffSize, processContext *procCtx){
+    int i;
+    int offset = 0, acumOffset = 0;
     
+    if(procCtx->args[0] != NULL){
+        strcpy(str, procCtx->args[0]);
+        acumOffset = strlen(str);
+    }
+    
+    for(i = 1; procCtx->args[i] != NULL; i++){   
+        offset = snprintf(str + acumOffset, buffSize - acumOffset, "%s %s", str + acumOffset, procCtx->args[i]);
+        acumOffset = acumOffset + offset;
+    }
 }
 
 
 void createProcess(processContext *procCtx){
-
     int p_stdin[2], p_stdout[2];
     pid_t pid;
     
@@ -40,20 +56,18 @@ void createProcess(processContext *procCtx){
     // Create subprocess
     pid = fork();
     
-    if(pid < 0){
+    if(pid < 0){ // Error
         blog(LOG_ERROR, "Error creating subprocess");
         procCtx->status = ERROR;
         return;
-    }else if(pid == 0){
-        // Child
-        
+    }else if(pid == 0){ // Child
+       
         close(p_stdin[WRITE]);
         close(p_stdout[READ]);
-        
+
         // Se cierran todos los descriptores del proceso excepto los (0,1,2) y los extremos necesarios de la pipe
         if(closeNonStdDescriptors(getpid(), p_stdin[READ], p_stdout[WRITE]) == -1){
             blog(LOG_ERROR, "Error Closing non std descriptors.");
-            procCtx->status = ERROR;
             exit(-1);
         }
         
@@ -63,33 +77,32 @@ void createProcess(processContext *procCtx){
            dup2(p_stdout[WRITE], STDERR) == -1 ){
             
             blog(LOG_ERROR, "Error asociating std to pipes");
-            procCtx->status = ERROR;
             exit(-1);
         }
-      
+        
         close(p_stdin[READ]);
         close(p_stdout[WRITE]);
-
-        // Print SO Command
-        char soCmd [2048];
-        
         
         // Se cambia la imagen del proceso
-        procCtx->status = RUNNING;
         if(execvp(procCtx->binPath, procCtx->args) == -1){
-            blog(LOG_ERROR, "Error changing image of subprocess");
-            procCtx->status = ERROR;
             exit(-1);
         }
         
-    }else{
-        // Parent
+    }else{ // Parent
+        
+        procCtx->status = RUNNING;
         procCtx->pid    = pid;
         procCtx->fd[0]  = p_stdin[WRITE];
         procCtx->fd[1]  = p_stdout[READ];
         
         close(p_stdin[READ]);
         close(p_stdout[WRITE]);
+        
+        
+        char soCmd [MAXSOCMDSIZE];
+        sprintSOCommand(soCmd, MAXSOCMDSIZE, procCtx);
+        blog(LOG_INFO, "Executing SO Command : %s", soCmd);
+        
     }    
 }
 
@@ -111,7 +124,7 @@ static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2){
         
         // Se cierran todos los descriptores no estandar, excepto los 2 pasados como argumento y el que se esta usando para navegar por los mismos
         if(efd > 2 && efd != fd1 && efd != fd2 && efd != dirfd(dp))
-            close(atoi(dirEntry->d_name));
+            close(efd);
     }
     
     closedir(dp);
@@ -119,9 +132,21 @@ static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2){
 }
 
 void waitProcess(processContext *procCtx){
-    pid_t pid;
-    int status;
+    pid_t   pid;
+    int     status;
+    char    buff [MAXBUFF];
+    size_t  nread;
     
+    memset(buff, 0, MAXBUFF);
+    
+    // Se lee toda la salida estandar del proceso
+    nread = readFromProcess(procCtx, buff, MAXBUFF);
+    while(nread > 0){
+        blog(LOG_DEBUG, "<<<%s>>> : %s", procCtx->binPath, buff);
+        nread = readFromProcess(procCtx, buff, MAXBUFF);
+    }
+    
+    // Espera de señales del proceso
     blog(LOG_INFO, "Waiting end of process pid : %d", procCtx->pid);
     pid = waitpid(procCtx->pid, &status, 0);
     
@@ -136,6 +161,11 @@ void waitProcess(processContext *procCtx){
         if(WIFEXITED(status)){
             blog(LOG_INFO, "Process pid : %d finish normally.", procCtx->pid);
             procCtx->status = FINISHED;
+            
+            if(WEXITSTATUS(status) != 0){
+                blog(LOG_INFO, "Process pid : %d exit status : %d", procCtx->pid, WEXITSTATUS(status));
+                procCtx->status = ERROR;
+            }
 
             if(WIFSIGNALED(status))
                 blog(LOG_INFO, "Process pid : %d signaled by signal %d.", procCtx->pid, WTERMSIG(status));
@@ -166,6 +196,12 @@ int getProcessStatus(processContext *procCtx){
             if(WIFEXITED(status)){
                 blog(LOG_INFO, "Process pid : %d finish normally.", procCtx->pid);
                 procCtx->status = FINISHED;
+                
+                
+                if(WEXITSTATUS(status) != 0){
+                    blog(LOG_INFO, "Process pid : %d exit status : %d", procCtx->pid, WEXITSTATUS(status));
+                    procCtx->status = ERROR;
+                }
 
                 if(WIFSIGNALED(status))
                     blog(LOG_INFO, "Process pid : %d signaled by signal %d.", procCtx->pid, WTERMSIG(status));

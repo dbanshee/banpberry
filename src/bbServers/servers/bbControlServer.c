@@ -20,16 +20,30 @@
 #include "../libs/logger.h"
 #include "../libs/procmanager.h"
 
+// Standard options
 #define START_COMMAND           "START"
 #define STOP_COMMAND            "STOP"
 #define RESTART_COMMAND         "RESTART"
-#define FORCE                   "FORCE"
+#define FORCE_OPTION            "FORCE"
 
-#define OMXPLAYER_SERVICE       "OMXPLAYER"
-#define VLC_SERVICE             "VLC"
-#define MOPIDY_SERVICE          "MOPIDY"
+// Services
 #define APACHE_SERVICE          "APACHE"
 #define FTP_SERVICE             "FTP"
+#define MOPIDY_SERVICE          "MOPIDY"
+#define STARTX_SERVICE          "STARTX"
+#define OMXPLAYER_SERVICE       "OMXPLAYER"
+#define VLC_SERVICE             "VLC"
+#define VNC_SERVICE             "VNC"
+
+// SO Executables
+#define BASH_EXEC               "/bin/bash"
+#define APACHE_EXEC             "/bb/scripts/bbServices/bbApache.sh"
+#define FTP_EXEC                "/bb/scripts/bbServices/bbFtp.sh"
+#define MOPIDY_EXEC             "/bb/scripts/bbServices/bbMopidy.sh"
+#define OMXPLAYER_EXEC          "/bb/scripts/bbServices/bbOmxplayer.sh"
+#define STARTX_EXEC             "/bb/scripts/bbServices/bbStartX.sh"
+#define VLC_EXEC                "/bb/scripts/bbServices/bbVlc.sh"
+#define VNC_EXEC                "/bb/scripts/bbServices/bbVnc.sh"
 
 
 
@@ -40,23 +54,30 @@ void signalHandler(int sigNum);
 int controlHandler(int connfd);
 
 // Control Services Handlers
-int omxplayerServiceHandler(char **args, int nargs);
-int vlcServiceHandler(char **args, int nargs);
-int mopidyServiceHandler(char **args, int nargs);
 int apacheServiceHandler(char **args, int nargs);
 int ftpServiceHandler(char **args, int nargs);
+int mopidyServiceHandler(char **args, int nargs);
+int startXServiceHandler(char **args, int nargs);
+int omxplayerServiceHandler(char **args, int nargs);
+int startXServiceHandler(char **args, int nargs);
+int vlcServiceHandler(char **args, int nargs);
+int vncServiceHandler(char **args, int nargs);
 
+
+void temp();
 
 const char requestHeader [1024] = 
 "-------------------\n\
 - bbControlServer -\n\
 -------------------\n\
 Usage :\n\n\
-  START <service>\n\
-  STOP <service> [FORCE]\n\
-  RESTART <service> [FORCE]\n\
-\
-     service = OMXPLAYER|VLC|MOPIDY|APACHE|FTP\n\
+  APACHE <[START|STOP|RESTART]> [FORCE]\n\
+  FTP <[START|STOP|RESTART]> [FORCE]\n\
+  MOPIDY <[START|STOP|RESTART]> [FORCE]\n\
+  STARTX <[START|STOP|RESTART]> [FORCE]\n\
+  OMXPLAYER <[KILLALL]> [FORCE]\n\
+  VLC <STOP> [FORCE]\n\
+  VNC [START|STOP|RESTART]\n\
 BBCONTROL>";
 
 
@@ -71,11 +92,11 @@ int main(int argc, char *argv){
     signal(SIGINT,  signalHandler);
     
     
-    printf("-------------------------------\n");
+    printf("-----------------------------------------\n");
     printf("-- Banpberry Control Server    \n");
     printf("--     Banshee 2014            \n");
-    printf("-- %s\n", getCurrentDate());
-    printf("-------------------------------\n\n\n");
+    printf("-- Start at :%s\n", getCurrentDate());
+    printf("-----------------------------------------\n\n\n");
     
     // Inicializacion del contexto del servidor
     memset(&serverCtx, 0, sizeof(serverSocketContext));
@@ -133,25 +154,23 @@ int controlHandler(int connfd){
         int nargs  = 0;
         while(spl[nargs] != NULL) nargs++;
         
-        if(nargs >= 2 && nargs <= 3){
-            
-            if((strcasecmp(START_COMMAND,  spl[0]) == 0 && nargs == 2) || 
-               ((strcasecmp(STOP_COMMAND,  spl[0]) == 0 || strcasecmp(RESTART_COMMAND, spl[0]) == 0) && 
-                (nargs == 2 || strcasecmp(spl[2], FORCE) == 0))){
-                
-                if(strcasecmp(OMXPLAYER_SERVICE, spl[1]) == 0)
-                    requestError = omxplayerServiceHandler(spl, nargs);
-                else if(strcasecmp(VLC_SERVICE, spl[1]) == 0)
-                    requestError = vlcServiceHandler(spl, nargs);
-                else if(strcasecmp(MOPIDY_SERVICE, spl[1]) == 0)
-                    requestError = mopidyServiceHandler(spl, nargs);
-                else if(strcasecmp(APACHE_SERVICE, spl[1]) == 0)
-                    requestError = apacheServiceHandler(spl, nargs);
-                else if(strcasecmp(FTP_SERVICE, spl[1]) == 0)
-                    requestError = ftpServiceHandler(spl, nargs);
-                else
-                    requestError = -1;
-            }else{
+        
+        if(nargs >= 1){
+            if(strcasecmp(spl[0], APACHE_SERVICE) == 0)
+                requestError = apacheServiceHandler(spl, nargs);
+            else if(strcasecmp(spl[0], FTP_SERVICE) == 0)
+                requestError = ftpServiceHandler(spl, nargs);
+            else if(strcasecmp(spl[0], MOPIDY_SERVICE) == 0)
+                requestError = mopidyServiceHandler(spl, nargs);
+            else if(strcasecmp(spl[0], STARTX_SERVICE) == 0)
+                requestError = startXServiceHandler(spl, nargs);
+            else if(strcasecmp(spl[0], OMXPLAYER_SERVICE) == 0)
+                requestError = omxplayerServiceHandler(spl, nargs);
+            else if(strcasecmp(spl[0], VLC_SERVICE) == 0)
+                requestError = vlcServiceHandler(spl, nargs);
+            else if(strcasecmp(spl[0], VNC_SERVICE) == 0)
+                requestError = vncServiceHandler(spl, nargs);
+            else{
                 serverWriteBuffer(connfd, REQUEST_ERROR, strlen(REQUEST_ERROR));
                 requestError = -1;
             }
@@ -168,30 +187,29 @@ int controlHandler(int connfd){
     return 0;
 }
 
-
-int genericScriptServiceHandler(){
-
-}
-
-int omxplayerServiceHandler(char **args, int nargs){
-
-}
-
-int vlcServiceHandler(char **args, int nargs){
-
-}
-
-int mopidyServiceHandler(char **args, int nargs){
+int apacheServiceHandler(char **args, int nargs){
+    int requestOk = 1;
+    
+    blog(LOG_INFO, "Apache Service action requested");
+    
     processContext procCtx;
     initializeProcessContex(&procCtx);
     
+    if((nargs < 2) || (nargs > 3) ||
+       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
+                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
+                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
+       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
     
-    procCtx.binPath    = "/bin/bash";
-    procCtx.args       = (char**) malloc(sizeof(char*)*5);
+    procCtx.binPath     = BASH_EXEC;
+    procCtx.args        = (char**) malloc(sizeof(char*)*5);
     
-    procCtx.args[0] = "/bin/bash";
-    procCtx.args[1] = "/bb/scripts/bbServices/bbMopidy.sh";
-    procCtx.args[2] = args[0];
+    procCtx.args[0]     = BASH_EXEC;
+    procCtx.args[1]     = APACHE_EXEC;
+    procCtx.args[2]     = args[1];
     
     if(nargs == 3){
         procCtx.args[3] = args[2]; // Opcion FORCE
@@ -203,16 +221,283 @@ int mopidyServiceHandler(char **args, int nargs){
     
     if(procCtx.status == RUNNING)
         waitProcess(&procCtx);
-    else
-        blog(LOG_ERROR, "Error executing Mopidy Service");
+    
+    if(procCtx.status != FINISHED){
+        blog(LOG_ERROR, "Error executing Apache Service");
+        requestOk = -1;
+    }
     
     free(procCtx.args);
-}
-
-int apacheServiceHandler(char **args, int nargs){
-
+    
+    return requestOk;
 }
 
 int ftpServiceHandler(char **args, int nargs){
+    int requestOk = 1;
+    
+    blog(LOG_INFO, "Ftp Service action requested");
+    
+    processContext procCtx;
+    initializeProcessContex(&procCtx);
+    
+    if((nargs < 2) || (nargs > 3) ||
+       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
+                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
+                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
+       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+    
+    procCtx.binPath     = BASH_EXEC;
+    procCtx.args        = (char**) malloc(sizeof(char*)*5);
+    
+    procCtx.args[0]     = BASH_EXEC;
+    procCtx.args[1]     = FTP_EXEC;
+    procCtx.args[2]     = args[1];
+    
+    if(nargs == 3){
+        procCtx.args[3] = args[2]; // Opcion FORCE
+        procCtx.args[4] = NULL;
+    }else
+        procCtx.args[3] = NULL;
+    
+    createProcess(&procCtx);
+    
+    if(procCtx.status == RUNNING)
+        waitProcess(&procCtx);
+    
+    if(procCtx.status != FINISHED){
+        blog(LOG_ERROR, "Error executing Ftp Service");
+        requestOk = -1;
+    }
+    
+    free(procCtx.args);
+    
+    return requestOk;
+}
 
+int mopidyServiceHandler(char **args, int nargs){
+    int requestOk = 1;
+    
+    blog(LOG_INFO, "Mopidy Service action requested");
+    
+    processContext procCtx;
+    initializeProcessContex(&procCtx);
+    
+    if((nargs < 2) || (nargs > 3) ||
+       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
+                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
+                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
+       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+    
+    procCtx.binPath     = BASH_EXEC;
+    procCtx.args        = (char**) malloc(sizeof(char*)*5);
+    
+    procCtx.args[0]     = BASH_EXEC;
+    procCtx.args[1]     = MOPIDY_EXEC;
+    procCtx.args[2]     = args[1];
+    
+    if(nargs == 3){
+        procCtx.args[3] = args[2]; // Opcion FORCE
+        procCtx.args[4] = NULL;
+    }else
+        procCtx.args[3] = NULL;
+    
+    createProcess(&procCtx);
+    
+    if(procCtx.status == RUNNING)
+        waitProcess(&procCtx);
+    
+    if(procCtx.status != FINISHED){
+        blog(LOG_ERROR, "Error executing Mopidy Service");
+        requestOk = -1;
+    }
+    
+    free(procCtx.args);
+    
+    return requestOk;
+}
+
+int startXServiceHandler(char **args, int nargs){
+    int requestOk = 1;
+    
+    blog(LOG_INFO, "StartX Service action requested");
+    
+    processContext procCtx;
+    initializeProcessContex(&procCtx);
+    
+    if((nargs < 2) || (nargs > 3) ||
+       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
+                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
+                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
+       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+    
+    procCtx.binPath     = BASH_EXEC;
+    procCtx.args        = (char**) malloc(sizeof(char*)*5);
+    
+    procCtx.args[0]     = BASH_EXEC;
+    procCtx.args[1]     = STARTX_EXEC;
+    procCtx.args[2]     = args[1];
+    
+    if(nargs == 3){
+        procCtx.args[3] = args[2]; // Opcion FORCE
+        procCtx.args[4] = NULL;
+    }else
+        procCtx.args[3] = NULL;
+    
+    createProcess(&procCtx);
+    
+    if(procCtx.status == RUNNING)
+        waitProcess(&procCtx);
+    
+    if(procCtx.status != FINISHED){
+        blog(LOG_ERROR, "Error executing Mopidy Service");
+        requestOk = -1;
+    }
+    
+    free(procCtx.args);
+    
+    return requestOk;
+}
+
+int omxplayerServiceHandler(char **args, int nargs){
+    int requestOk = 1;
+    
+    blog(LOG_INFO, "Omxlplayer Service action requested");
+    
+    processContext procCtx;
+    initializeProcessContex(&procCtx);
+    
+    if((nargs < 2) || (nargs > 3) ||
+       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
+                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
+                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
+       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+    
+    procCtx.binPath     = BASH_EXEC;
+    procCtx.args        = (char**) malloc(sizeof(char*)*5);
+    
+    procCtx.args[0]     = BASH_EXEC;
+    procCtx.args[1]     = OMXPLAYER_EXEC;
+    procCtx.args[2]     = args[1];
+    
+    if(nargs == 3){
+        procCtx.args[3] = args[2]; // Opcion FORCE
+        procCtx.args[4] = NULL;
+    }else
+        procCtx.args[3] = NULL;
+    
+    createProcess(&procCtx);
+    
+    if(procCtx.status == RUNNING)
+        waitProcess(&procCtx);
+    
+    if(procCtx.status != FINISHED){
+        blog(LOG_ERROR, "Error executing Omxlplayer Service");
+        requestOk = -1;
+    }
+    
+    free(procCtx.args);
+    
+    return requestOk;
+}
+
+int vlcServiceHandler(char **args, int nargs){
+    int requestOk = 1;
+    
+    blog(LOG_INFO, "Mopidy Vlc action requested");
+    
+    processContext procCtx;
+    initializeProcessContex(&procCtx);
+    
+    if((nargs < 2) || (nargs > 3) ||
+       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
+                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
+                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
+       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+    
+    procCtx.binPath     = BASH_EXEC;
+    procCtx.args        = (char**) malloc(sizeof(char*)*5);
+    
+    procCtx.args[0]     = BASH_EXEC;
+    procCtx.args[1]     = VLC_EXEC;
+    procCtx.args[2]     = args[1];
+    
+    if(nargs == 3){
+        procCtx.args[3] = args[2]; // Opcion FORCE
+        procCtx.args[4] = NULL;
+    }else
+        procCtx.args[3] = NULL;
+    
+    createProcess(&procCtx);
+    
+    if(procCtx.status == RUNNING)
+        waitProcess(&procCtx);
+    
+    if(procCtx.status != FINISHED){
+        blog(LOG_ERROR, "Error executing Vlc Service");
+        requestOk = -1;
+    }
+    
+    free(procCtx.args);
+    
+    return requestOk;
+}
+
+int vncServiceHandler(char **args, int nargs){
+    int requestOk = 1;
+    
+    blog(LOG_INFO, "Mopidy Vnc action requested");
+    
+    processContext procCtx;
+    initializeProcessContex(&procCtx);
+    
+    if((nargs < 2) || (nargs > 3) ||
+       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
+                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
+                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
+       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+    
+    procCtx.binPath     = BASH_EXEC;
+    procCtx.args        = (char**) malloc(sizeof(char*)*5);
+    
+    procCtx.args[0]     = BASH_EXEC;
+    procCtx.args[1]     = VNC_EXEC;
+    procCtx.args[2]     = args[1];
+    
+    if(nargs == 3){
+        procCtx.args[3] = args[2]; // Opcion FORCE
+        procCtx.args[4] = NULL;
+    }else
+        procCtx.args[3] = NULL;
+    
+    createProcess(&procCtx);
+    
+    if(procCtx.status == RUNNING)
+        waitProcess(&procCtx);
+    
+    if(procCtx.status != FINISHED){
+        blog(LOG_ERROR, "Error executing Vnc Service");
+        requestOk = -1;
+    }
+    
+    free(procCtx.args);
+    
+    return requestOk;
 }

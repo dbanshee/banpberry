@@ -91,10 +91,6 @@ void abortServer(serverSocketContext *serverCtx){
     exit(-1);
 }
 
-//ssize_t serverReadBuffer(int connfd, char* buff){
-//    serverReadBuffer(connfd, buff, strlen(buff));
-//}
-
 ssize_t serverReadBuffer(int connfd, char *buff, size_t buffSize){
     
     if(fcntl(connfd, F_GETFL) == -1){

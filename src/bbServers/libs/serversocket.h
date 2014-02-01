@@ -21,6 +21,7 @@ typedef struct serverSocketContext {
 } serverSocketContext;
 
 
+// Public Functions
 int  socketServerLoop(serverSocketContext *serverCtx);
 void abortServer(serverSocketContext *serverCtx);
 void finishServer(serverSocketContext *serverCtx);
