@@ -14,3 +14,6 @@ all : bbControlServer.o #bbMediaServer.o
 clean:
 	rm -rf *.o
 	rm -rf bbControlServer bbMediaServer
+	
+install:
+	cp bbControlServer /bb/bin
