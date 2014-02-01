@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <sys/time.h>
 
 
 char *getCurrentDate(){
@@ -41,11 +42,11 @@ void blog(int level, char *format, ...){
     va_end(argptr);
     
     if(level == LOG_INFO)
-        printf("[INFO] <%s>  %s\n", getCurrentDate(), msg);
+        printf("[INFO]  <%s>  %s\n", getCurrentDate(), msg);
     else if(level == LOG_DEBUG)
         printf("[DEBUG] <%s>  %s\n", getCurrentDate(), msg);
     else if(level == LOG_WARN)
-        printf("[WARN] <%s>  %s\n", getCurrentDate(), msg);
+        printf("[WARN]  <%s>  %s\n", getCurrentDate(), msg);
     else if(level == LOG_ERROR){
         if(errno == 0)
             printf("[ERROR] <%s>  %s\n", getCurrentDate(), msg);
