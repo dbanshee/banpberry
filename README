@@ -29,7 +29,8 @@
     |--scripts              (scripts varios)
     \--src
       |
-      |--bbOmxControlServer  (Servidor de reproduccion de media sobre omxplayer)
+      |--bbOmxControlServer  (Servidor de reproduccion de media sobre omxplayer) (Obsoleto)
+      |--bbServers           (Framework y familia de servidores principal)
       \--BanpberryController (Android App)
 
 
