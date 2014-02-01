@@ -21,13 +21,15 @@
 #include "../libs/procmanager.h"
 
 // Standard options
-#define START_COMMAND           "START"
-#define STOP_COMMAND            "STOP"
-#define RESTART_COMMAND         "RESTART"
-#define FORCE_OPTION            "FORCE"
+#define START_COMMAND           "start"
+#define STOP_COMMAND            "stop"
+#define RESTART_COMMAND         "restart"
+#define FORCE_OPTION            "force"
 
 // Services
 #define APACHE_SERVICE          "APACHE"
+#define DHCP_SERVICE            "DHCP"
+#define DNS_SERVICE             "DNS"
 #define FTP_SERVICE             "FTP"
 #define MOPIDY_SERVICE          "MOPIDY"
 #define STARTX_SERVICE          "STARTX"
@@ -38,6 +40,8 @@
 // SO Executables
 #define BASH_EXEC               "/bin/bash"
 #define APACHE_EXEC             "/bb/scripts/bbServices/bbApache.sh"
+#define DHCP_EXEC               "/bb/scripts/bbServices/bbDhcp.sh"
+#define DNS_EXEC                "/bb/scripts/bbServices/bbDns.sh"
 #define FTP_EXEC                "/bb/scripts/bbServices/bbFtp.sh"
 #define MOPIDY_EXEC             "/bb/scripts/bbServices/bbMopidy.sh"
 #define OMXPLAYER_EXEC          "/bb/scripts/bbServices/bbOmxplayer.sh"
@@ -55,6 +59,8 @@ int controlHandler(int connfd);
 
 // Control Services Handlers
 int apacheServiceHandler(char **args, int nargs);
+int dhcpServiceHandler(char **args, int nargs);
+int dnsServiceHandler(char **args, int nargs);
 int ftpServiceHandler(char **args, int nargs);
 int mopidyServiceHandler(char **args, int nargs);
 int startXServiceHandler(char **args, int nargs);
@@ -71,13 +77,15 @@ const char requestHeader [1024] =
 - bbControlServer -\n\
 -------------------\n\
 Usage :\n\n\
-  APACHE <[START|STOP|RESTART]> [FORCE]\n\
-  FTP <[START|STOP|RESTART]> [FORCE]\n\
-  MOPIDY <[START|STOP|RESTART]> [FORCE]\n\
-  STARTX <[START|STOP|RESTART]> [FORCE]\n\
-  OMXPLAYER <[KILLALL]> [FORCE]\n\
-  VLC <STOP> [FORCE]\n\
-  VNC [START|STOP|RESTART]\n\
+  APACHE <[start|stop|restart]> [force]\n\
+  DHCP <[start|stop|restart]> [force]\n\
+  DNS <[start|stop|restart]> [force]\n\
+  FTP <[start|stop|restart]> [force]\n\
+  MOPIDY <[start|stop|restart]> [force]\n\
+  STARTX <[start|stop|restart]> [force]\n\
+  OMXPLAYER <[start|stop|restart]> [force]\n\
+  VLC <start|stop|restart> [force]\n\
+  VNC [start|stop|restart]\n\
 BBCONTROL>";
 
 
@@ -158,6 +166,10 @@ int controlHandler(int connfd){
         if(nargs >= 1){
             if(strcasecmp(spl[0], APACHE_SERVICE) == 0)
                 requestError = apacheServiceHandler(spl, nargs);
+            else if(strcasecmp(spl[0], DHCP_SERVICE) == 0)
+                requestError = dhcpServiceHandler(spl, nargs);
+            else if(strcasecmp(spl[0], DNS_SERVICE) == 0)
+                requestError = dnsServiceHandler(spl, nargs);
             else if(strcasecmp(spl[0], FTP_SERVICE) == 0)
                 requestError = ftpServiceHandler(spl, nargs);
             else if(strcasecmp(spl[0], MOPIDY_SERVICE) == 0)
@@ -232,6 +244,7 @@ int apacheServiceHandler(char **args, int nargs){
     return requestOk;
 }
 
+
 int ftpServiceHandler(char **args, int nargs){
     int requestOk = 1;
     
@@ -269,6 +282,98 @@ int ftpServiceHandler(char **args, int nargs){
     
     if(procCtx.status != FINISHED){
         blog(LOG_ERROR, "Error executing Ftp Service");
+        requestOk = -1;
+    }
+    
+    free(procCtx.args);
+    
+    return requestOk;
+}
+
+
+int dhcpServiceHandler(char **args, int nargs){
+    int requestOk = 1;
+    
+    blog(LOG_INFO, "Dhcp Service action requested");
+    
+    processContext procCtx;
+    initializeProcessContex(&procCtx);
+    
+    if((nargs < 2) || (nargs > 3) ||
+       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
+                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
+                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
+       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+    
+    procCtx.binPath     = BASH_EXEC;
+    procCtx.args        = (char**) malloc(sizeof(char*)*5);
+    
+    procCtx.args[0]     = BASH_EXEC;
+    procCtx.args[1]     = DHCP_EXEC;
+    procCtx.args[2]     = args[1];
+    
+    if(nargs == 3){
+        procCtx.args[3] = args[2]; // Opcion FORCE
+        procCtx.args[4] = NULL;
+    }else
+        procCtx.args[3] = NULL;
+    
+    createProcess(&procCtx);
+    
+    if(procCtx.status == RUNNING)
+        waitProcess(&procCtx);
+    
+    if(procCtx.status != FINISHED){
+        blog(LOG_ERROR, "Error executing Dhcp Service");
+        requestOk = -1;
+    }
+    
+    free(procCtx.args);
+    
+    return requestOk;
+}
+
+
+int dnsServiceHandler(char **args, int nargs){
+    int requestOk = 1;
+    
+    blog(LOG_INFO, "Dns Service action requested");
+    
+    processContext procCtx;
+    initializeProcessContex(&procCtx);
+    
+    if((nargs < 2) || (nargs > 3) ||
+       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
+                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
+                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
+       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+    
+    procCtx.binPath     = BASH_EXEC;
+    procCtx.args        = (char**) malloc(sizeof(char*)*5);
+    
+    procCtx.args[0]     = BASH_EXEC;
+    procCtx.args[1]     = DNS_EXEC;
+    procCtx.args[2]     = args[1];
+    
+    if(nargs == 3){
+        procCtx.args[3] = args[2]; // Opcion FORCE
+        procCtx.args[4] = NULL;
+    }else
+        procCtx.args[3] = NULL;
+    
+    createProcess(&procCtx);
+    
+    if(procCtx.status == RUNNING)
+        waitProcess(&procCtx);
+    
+    if(procCtx.status != FINISHED){
+        blog(LOG_ERROR, "Error executing Dns Service");
         requestOk = -1;
     }
     
