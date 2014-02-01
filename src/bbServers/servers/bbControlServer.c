@@ -14,6 +14,7 @@
 #include <time.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 #include "../libs/stringutils.h"
 #include "../libs/serversocket.h"
@@ -54,6 +55,9 @@
 // Signal Handler
 void signalHandler(int sigNum);
 
+// 
+int checkServicesExecutables();
+
 // Manejador de peticion de conexion
 int controlHandler(int connfd);
 
@@ -70,6 +74,8 @@ int vlcServiceHandler(char **args, int nargs);
 int vncServiceHandler(char **args, int nargs);
 
 
+static int genericvBBScriptHandler(char * service, char * command, char** args, int nargs);
+
 void temp();
 
 const char requestHeader [1024] = 
@@ -85,7 +91,7 @@ Usage :\n\n\
   STARTX <[start|stop|restart]> [force]\n\
   OMXPLAYER <[start|stop|restart]> [force]\n\
   VLC <start|stop|restart> [force]\n\
-  VNC [start|stop|restart]\n\
+  VNC [start|stop|restart] [force]\n\
 BBCONTROL>";
 
 
@@ -105,6 +111,9 @@ int main(int argc, char *argv){
     printf("--     Banshee 2014            \n");
     printf("-- Start at :%s\n", getCurrentDate());
     printf("-----------------------------------------\n\n\n");
+    
+    
+    checkServicesExecutables();
     
     // Inicializacion del contexto del servidor
     memset(&serverCtx, 0, sizeof(serverSocketContext));
@@ -128,6 +137,24 @@ void signalHandler(int sigNum){
         return;
     
     finishServer(&serverCtx);
+}
+
+
+int checkServicesExecutables(){
+    int nexec = 10, i;
+    struct stat fstat;
+    int existsAll = 0;
+    
+    const char *soExecs [] = { BASH_EXEC,   APACHE_EXEC,    DHCP_EXEC,   DNS_EXEC, FTP_EXEC, 
+                               MOPIDY_EXEC, OMXPLAYER_EXEC, STARTX_EXEC, VLC_EXEC, VNC_EXEC };
+    
+    for(i = 0; i < nexec; i++)
+        if(stat(soExecs[i], &fstat) == -1){
+            blog(LOG_WARN, "bbControlService required file '%s' not found.", soExecs[i]);
+            existsAll = -1;
+        }
+    
+    return existsAll;
 }
 
 
@@ -199,10 +226,10 @@ int controlHandler(int connfd){
     return 0;
 }
 
-int apacheServiceHandler(char **args, int nargs){
+static int genericvBBScriptHandler(char *service, char *command, char** args, int nargs){
     int requestOk = 1;
     
-    blog(LOG_INFO, "Apache Service action requested");
+    blog(LOG_INFO, "%s Service action requested", service);
     
     processContext procCtx;
     initializeProcessContex(&procCtx);
@@ -220,7 +247,7 @@ int apacheServiceHandler(char **args, int nargs){
     procCtx.args        = (char**) malloc(sizeof(char*)*5);
     
     procCtx.args[0]     = BASH_EXEC;
-    procCtx.args[1]     = APACHE_EXEC;
+    procCtx.args[1]     = command;
     procCtx.args[2]     = args[1];
     
     if(nargs == 3){
@@ -235,7 +262,7 @@ int apacheServiceHandler(char **args, int nargs){
         waitProcess(&procCtx);
     
     if(procCtx.status != FINISHED){
-        blog(LOG_ERROR, "Error executing Apache Service");
+        blog(LOG_ERROR, "Error executing %s Service", service);
         requestOk = -1;
     }
     
@@ -244,365 +271,38 @@ int apacheServiceHandler(char **args, int nargs){
     return requestOk;
 }
 
+int apacheServiceHandler(char **args, int nargs){
+    return genericvBBScriptHandler(APACHE_SERVICE, APACHE_EXEC, args, nargs);
+}
 
 int ftpServiceHandler(char **args, int nargs){
-    int requestOk = 1;
-    
-    blog(LOG_INFO, "Ftp Service action requested");
-    
-    processContext procCtx;
-    initializeProcessContex(&procCtx);
-    
-    if((nargs < 2) || (nargs > 3) ||
-       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
-                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
-                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
-       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
-        blog(LOG_ERROR, "Bad usage.");
-        return -1;
-    }
-    
-    procCtx.binPath     = BASH_EXEC;
-    procCtx.args        = (char**) malloc(sizeof(char*)*5);
-    
-    procCtx.args[0]     = BASH_EXEC;
-    procCtx.args[1]     = FTP_EXEC;
-    procCtx.args[2]     = args[1];
-    
-    if(nargs == 3){
-        procCtx.args[3] = args[2]; // Opcion FORCE
-        procCtx.args[4] = NULL;
-    }else
-        procCtx.args[3] = NULL;
-    
-    createProcess(&procCtx);
-    
-    if(procCtx.status == RUNNING)
-        waitProcess(&procCtx);
-    
-    if(procCtx.status != FINISHED){
-        blog(LOG_ERROR, "Error executing Ftp Service");
-        requestOk = -1;
-    }
-    
-    free(procCtx.args);
-    
-    return requestOk;
+    return genericvBBScriptHandler(FTP_SERVICE, FTP_EXEC, args, nargs);
 }
-
 
 int dhcpServiceHandler(char **args, int nargs){
-    int requestOk = 1;
-    
-    blog(LOG_INFO, "Dhcp Service action requested");
-    
-    processContext procCtx;
-    initializeProcessContex(&procCtx);
-    
-    if((nargs < 2) || (nargs > 3) ||
-       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
-                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
-                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
-       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
-        blog(LOG_ERROR, "Bad usage.");
-        return -1;
-    }
-    
-    procCtx.binPath     = BASH_EXEC;
-    procCtx.args        = (char**) malloc(sizeof(char*)*5);
-    
-    procCtx.args[0]     = BASH_EXEC;
-    procCtx.args[1]     = DHCP_EXEC;
-    procCtx.args[2]     = args[1];
-    
-    if(nargs == 3){
-        procCtx.args[3] = args[2]; // Opcion FORCE
-        procCtx.args[4] = NULL;
-    }else
-        procCtx.args[3] = NULL;
-    
-    createProcess(&procCtx);
-    
-    if(procCtx.status == RUNNING)
-        waitProcess(&procCtx);
-    
-    if(procCtx.status != FINISHED){
-        blog(LOG_ERROR, "Error executing Dhcp Service");
-        requestOk = -1;
-    }
-    
-    free(procCtx.args);
-    
-    return requestOk;
+    return genericvBBScriptHandler(DHCP_SERVICE, DHCP_EXEC, args, nargs);
 }
 
-
 int dnsServiceHandler(char **args, int nargs){
-    int requestOk = 1;
-    
-    blog(LOG_INFO, "Dns Service action requested");
-    
-    processContext procCtx;
-    initializeProcessContex(&procCtx);
-    
-    if((nargs < 2) || (nargs > 3) ||
-       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
-                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
-                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
-       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
-        blog(LOG_ERROR, "Bad usage.");
-        return -1;
-    }
-    
-    procCtx.binPath     = BASH_EXEC;
-    procCtx.args        = (char**) malloc(sizeof(char*)*5);
-    
-    procCtx.args[0]     = BASH_EXEC;
-    procCtx.args[1]     = DNS_EXEC;
-    procCtx.args[2]     = args[1];
-    
-    if(nargs == 3){
-        procCtx.args[3] = args[2]; // Opcion FORCE
-        procCtx.args[4] = NULL;
-    }else
-        procCtx.args[3] = NULL;
-    
-    createProcess(&procCtx);
-    
-    if(procCtx.status == RUNNING)
-        waitProcess(&procCtx);
-    
-    if(procCtx.status != FINISHED){
-        blog(LOG_ERROR, "Error executing Dns Service");
-        requestOk = -1;
-    }
-    
-    free(procCtx.args);
-    
-    return requestOk;
+    return genericvBBScriptHandler(DNS_SERVICE, DNS_EXEC, args, nargs);
 }
 
 int mopidyServiceHandler(char **args, int nargs){
-    int requestOk = 1;
-    
-    blog(LOG_INFO, "Mopidy Service action requested");
-    
-    processContext procCtx;
-    initializeProcessContex(&procCtx);
-    
-    if((nargs < 2) || (nargs > 3) ||
-       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
-                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
-                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
-       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
-        blog(LOG_ERROR, "Bad usage.");
-        return -1;
-    }
-    
-    procCtx.binPath     = BASH_EXEC;
-    procCtx.args        = (char**) malloc(sizeof(char*)*5);
-    
-    procCtx.args[0]     = BASH_EXEC;
-    procCtx.args[1]     = MOPIDY_EXEC;
-    procCtx.args[2]     = args[1];
-    
-    if(nargs == 3){
-        procCtx.args[3] = args[2]; // Opcion FORCE
-        procCtx.args[4] = NULL;
-    }else
-        procCtx.args[3] = NULL;
-    
-    createProcess(&procCtx);
-    
-    if(procCtx.status == RUNNING)
-        waitProcess(&procCtx);
-    
-    if(procCtx.status != FINISHED){
-        blog(LOG_ERROR, "Error executing Mopidy Service");
-        requestOk = -1;
-    }
-    
-    free(procCtx.args);
-    
-    return requestOk;
+    return genericvBBScriptHandler(MOPIDY_SERVICE, MOPIDY_EXEC, args, nargs);
 }
 
 int startXServiceHandler(char **args, int nargs){
-    int requestOk = 1;
-    
-    blog(LOG_INFO, "StartX Service action requested");
-    
-    processContext procCtx;
-    initializeProcessContex(&procCtx);
-    
-    if((nargs < 2) || (nargs > 3) ||
-       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
-                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
-                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
-       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
-        blog(LOG_ERROR, "Bad usage.");
-        return -1;
-    }
-    
-    procCtx.binPath     = BASH_EXEC;
-    procCtx.args        = (char**) malloc(sizeof(char*)*5);
-    
-    procCtx.args[0]     = BASH_EXEC;
-    procCtx.args[1]     = STARTX_EXEC;
-    procCtx.args[2]     = args[1];
-    
-    if(nargs == 3){
-        procCtx.args[3] = args[2]; // Opcion FORCE
-        procCtx.args[4] = NULL;
-    }else
-        procCtx.args[3] = NULL;
-    
-    createProcess(&procCtx);
-    
-    if(procCtx.status == RUNNING)
-        waitProcess(&procCtx);
-    
-    if(procCtx.status != FINISHED){
-        blog(LOG_ERROR, "Error executing Mopidy Service");
-        requestOk = -1;
-    }
-    
-    free(procCtx.args);
-    
-    return requestOk;
+    return genericvBBScriptHandler(STARTX_SERVICE, STARTX_EXEC, args, nargs);
 }
 
 int omxplayerServiceHandler(char **args, int nargs){
-    int requestOk = 1;
-    
-    blog(LOG_INFO, "Omxlplayer Service action requested");
-    
-    processContext procCtx;
-    initializeProcessContex(&procCtx);
-    
-    if((nargs < 2) || (nargs > 3) ||
-       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
-                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
-                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
-       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
-        blog(LOG_ERROR, "Bad usage.");
-        return -1;
-    }
-    
-    procCtx.binPath     = BASH_EXEC;
-    procCtx.args        = (char**) malloc(sizeof(char*)*5);
-    
-    procCtx.args[0]     = BASH_EXEC;
-    procCtx.args[1]     = OMXPLAYER_EXEC;
-    procCtx.args[2]     = args[1];
-    
-    if(nargs == 3){
-        procCtx.args[3] = args[2]; // Opcion FORCE
-        procCtx.args[4] = NULL;
-    }else
-        procCtx.args[3] = NULL;
-    
-    createProcess(&procCtx);
-    
-    if(procCtx.status == RUNNING)
-        waitProcess(&procCtx);
-    
-    if(procCtx.status != FINISHED){
-        blog(LOG_ERROR, "Error executing Omxlplayer Service");
-        requestOk = -1;
-    }
-    
-    free(procCtx.args);
-    
-    return requestOk;
+    return genericvBBScriptHandler(OMXPLAYER_SERVICE, OMXPLAYER_EXEC, args, nargs);
 }
 
 int vlcServiceHandler(char **args, int nargs){
-    int requestOk = 1;
-    
-    blog(LOG_INFO, "Mopidy Vlc action requested");
-    
-    processContext procCtx;
-    initializeProcessContex(&procCtx);
-    
-    if((nargs < 2) || (nargs > 3) ||
-       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
-                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
-                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
-       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
-        blog(LOG_ERROR, "Bad usage.");
-        return -1;
-    }
-    
-    procCtx.binPath     = BASH_EXEC;
-    procCtx.args        = (char**) malloc(sizeof(char*)*5);
-    
-    procCtx.args[0]     = BASH_EXEC;
-    procCtx.args[1]     = VLC_EXEC;
-    procCtx.args[2]     = args[1];
-    
-    if(nargs == 3){
-        procCtx.args[3] = args[2]; // Opcion FORCE
-        procCtx.args[4] = NULL;
-    }else
-        procCtx.args[3] = NULL;
-    
-    createProcess(&procCtx);
-    
-    if(procCtx.status == RUNNING)
-        waitProcess(&procCtx);
-    
-    if(procCtx.status != FINISHED){
-        blog(LOG_ERROR, "Error executing Vlc Service");
-        requestOk = -1;
-    }
-    
-    free(procCtx.args);
-    
-    return requestOk;
+    return genericvBBScriptHandler(VLC_SERVICE, VLC_EXEC, args, nargs);
 }
 
 int vncServiceHandler(char **args, int nargs){
-    int requestOk = 1;
-    
-    blog(LOG_INFO, "Mopidy Vnc action requested");
-    
-    processContext procCtx;
-    initializeProcessContex(&procCtx);
-    
-    if((nargs < 2) || (nargs > 3) ||
-       (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
-                       strcasecmp(args[1], STOP_COMMAND)     != 0 && 
-                       strcasecmp(args[1], RESTART_COMMAND)  != 0 )) || 
-       (nargs == 3 &&  strcasecmp(args[2], FORCE_OPTION)     != 0)   ){
-        blog(LOG_ERROR, "Bad usage.");
-        return -1;
-    }
-    
-    procCtx.binPath     = BASH_EXEC;
-    procCtx.args        = (char**) malloc(sizeof(char*)*5);
-    
-    procCtx.args[0]     = BASH_EXEC;
-    procCtx.args[1]     = VNC_EXEC;
-    procCtx.args[2]     = args[1];
-    
-    if(nargs == 3){
-        procCtx.args[3] = args[2]; // Opcion FORCE
-        procCtx.args[4] = NULL;
-    }else
-        procCtx.args[3] = NULL;
-    
-    createProcess(&procCtx);
-    
-    if(procCtx.status == RUNNING)
-        waitProcess(&procCtx);
-    
-    if(procCtx.status != FINISHED){
-        blog(LOG_ERROR, "Error executing Vnc Service");
-        requestOk = -1;
-    }
-    
-    free(procCtx.args);
-    
-    return requestOk;
+    return genericvBBScriptHandler(VNC_SERVICE, VNC_EXEC, args, nargs);
 }
