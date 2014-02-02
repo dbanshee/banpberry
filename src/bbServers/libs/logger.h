@@ -15,6 +15,8 @@
 #define LOG_WARN  2
 #define LOG_ERROR 3
 
+#define MAXSIZEMSG 2048
+
 char* getCurrentDate();
 void  blog(int level, char *format, ...);
 

@@ -1,5 +1,8 @@
+export CC = gcc
+export CCFLAGS =
 
-
+debug: CCFLAGS=-g
+debug: all
 
 all : 
 	cd libs; $(MAKE) all

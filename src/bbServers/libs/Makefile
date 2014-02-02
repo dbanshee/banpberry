@@ -1,14 +1,14 @@
 stringutils.o : stringutils.c
-	gcc -c stringutils.c
+	$(CC) -c $(CCFLAGS) stringutils.c
 
 serversocket.o : serversocket.c
-	gcc -c serversocket.c
+	$(CC) -c $(CCFLAGS) serversocket.c
 	
 logger.o : logger.c
-	gcc -c logger.c
+	$(CC) -c $(CCFLAGS) logger.c
 	
 procmanager.o : procmanager.c
-	gcc -c procmanager.c
+	$(CC) -c $(CCFLAGS) procmanager.c
 
 all: stringutils.o serversocket.o logger.o procmanager.o
 

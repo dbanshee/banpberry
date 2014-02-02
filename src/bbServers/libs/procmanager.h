@@ -36,6 +36,7 @@ typedef struct processContext {
 void initializeProcessContex(processContext *procCtx);
 void createProcess(processContext *procCtx);
 void waitProcess(processContext *procCtx);
+int existsProcess(const char* processName);
 
 int sendToProcess(processContext   *procCtx, char *buff, size_t buffSize);
 int readFromProcess(processContext *procCtx, char *buff, size_t buffSize);

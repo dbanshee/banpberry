@@ -48,7 +48,7 @@ int socketServerLoop(serverSocketContext *serverCtx){
         abortServer(serverCtx);
     }
     
-    blog(LOG_INFO, "Server initialized on port : %d... ", serverCtx->serverPort);
+    blog(LOG_INFO, "Server initialized on port : %d ... ", serverCtx->serverPort);
     
     // Conexion accept loop
     while(serverCtx->serverLoop){
@@ -139,7 +139,4 @@ ssize_t serverWriteBuffer(int connfd, char *buff, size_t buffSize){
     }
 }
 
-//ssize_t serverWriteBuffer(int connfd, char* buff){
-//    serverWriteBuffer(connfd, buff, strlen(buff));
-//}
 

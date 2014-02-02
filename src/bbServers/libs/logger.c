@@ -34,11 +34,11 @@ char *getCurrentDate(){
  * void blog(int level, char* format, ...){}
  */
 void blog(int level, char *format, ...){
-    char msg[1024];
+    char msg[MAXSIZEMSG];
     
     va_list argptr;
     va_start(argptr, format);
-    vsprintf(msg, format, argptr);
+    vsnprintf(msg, MAXSIZEMSG, format, argptr);
     va_end(argptr);
     
     if(level == LOG_INFO)

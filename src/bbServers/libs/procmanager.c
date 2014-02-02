@@ -10,6 +10,7 @@
 
 #include "procmanager.h"
 #include "logger.h"
+#include "stringutils.h"
 
 #define MAXBUFF      1024
 #define MAXSOCMDSIZE 4096
@@ -37,7 +38,7 @@ static void sprintSOCommand(char *str, ssize_t buffSize, processContext *procCtx
     
     for(i = 1; procCtx->args[i] != NULL; i++){   
         offset = snprintf(str + acumOffset, buffSize - acumOffset, "%s %s", str + acumOffset, procCtx->args[i]);
-        acumOffset = acumOffset + offset;
+        acumOffset += offset;
     }
 }
 
@@ -84,9 +85,8 @@ void createProcess(processContext *procCtx){
         close(p_stdout[WRITE]);
         
         // Se cambia la imagen del proceso
-        if(execvp(procCtx->binPath, procCtx->args) == -1){
+        if(execvp(procCtx->binPath, procCtx->args) == -1)
             exit(-1);
-        }
         
     }else{ // Parent
         
@@ -112,6 +112,7 @@ static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2){
     struct dirent *dirEntry;
     int efd;
     
+    // Se recuperan los descriptores abiertos del proceso
     sprintf(procDirPath, "/proc/%d/fd", pid);
     
     if((dp = opendir(procDirPath)) == NULL){
@@ -137,13 +138,12 @@ void waitProcess(processContext *procCtx){
     char    buff [MAXBUFF];
     size_t  nread;
     
-    memset(buff, 0, MAXBUFF);
-    
     // Se lee toda la salida estandar del proceso
-    nread = readFromProcess(procCtx, buff, MAXBUFF);
+    nread = readFromProcess(procCtx, buff, MAXBUFF-1);
     while(nread > 0){
+        buff[nread] = '\0';
         blog(LOG_DEBUG, "<<<%s>>> : %s", procCtx->binPath, buff);
-        nread = readFromProcess(procCtx, buff, MAXBUFF);
+        nread = readFromProcess(procCtx, buff, MAXBUFF-1);
     }
     
     // Espera de señales del proceso
@@ -185,7 +185,7 @@ int getProcessStatus(processContext *procCtx){
     
     if(procCtx->status == RUNNING){
         
-        blog(LOG_INFO, "Waiting end of process pid : %d", procCtx->pid);
+        blog(LOG_INFO, "Waiting status of process pid : %d", procCtx->pid);
         pid = waitpid(procCtx->pid, &status, WNOHANG);
 
         if(pid == 0) // Status process has not changed
@@ -241,8 +241,7 @@ ssize_t readFromProcess(processContext *procCtx, char *buff, size_t buffSize){
         buff[0] = '\0';
         return 0;
     }else{
-        cleanLine(buff);
-        blog(LOG_DEBUG, "Read From Process: (bytes : %d) '%s'", nread, buff);
+        blog(LOG_DEBUG, "Read From Process: (bytes : %d)", nread);
         return nread;
     }
 }
@@ -266,5 +265,57 @@ ssize_t sendToProcess(processContext *procCtx, char *buff, size_t buffSize){
         blog(LOG_DEBUG, "Write to process : (bytes : %d) '%s'", nwrite, buff);
         return nwrite;
     }
+}
+
+static int isNumeric (const char * s)
+{
+    if (s == NULL || *s == '\0' || isspace(*s))
+      return 0;
+    
+    char * p;
+    strtod (s, &p);
+    return *p == '\0';
+}
+
+int existsProcess(const char *processName){
+    char procDirPath[64], buff[MAXBUFF];
+    DIR *dp;
+    struct dirent *dirEntry;
+    int exists = 0, fd;
+    ssize_t nread;
+
+    
+    if((dp = opendir("/proc")) == NULL){
+        blog(LOG_ERROR, "Error opening '/proc' directory.");
+        return -1;
+    }
+    
+    while(exists == 0 && (dirEntry = readdir(dp)) != NULL){
+        
+        if(isNumeric(dirEntry->d_name)){    
+            
+            sprintf(procDirPath, "/proc/%s/comm", dirEntry->d_name);
+            if((fd = open(procDirPath, O_RDONLY)) != 1){
+                
+                nread = read(fd, buff, MAXBUFF-1);
+                if(nread == -1)
+                    blog(LOG_ERROR, "Error reading '%s'", procDirPath);
+                else if(nread == 0)
+                    blog(LOG_WARN, "Empty content of '%s'", procDirPath);
+                else{
+                    buff[nread] = '\0';
+                    cleanLine(buff);
+                    
+                    if(strcasecmp(processName, buff) == 0)
+                        exists = 1;
+                }
+                
+                close(fd);
+            }
+        }    
+    }
+    
+    closedir(dp);
+    return exists;
 }
 
