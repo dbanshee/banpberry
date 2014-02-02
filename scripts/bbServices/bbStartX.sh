@@ -23,6 +23,6 @@ fi
 
 if [ $1 == "start" ] || [ $1 == "restart" ] ; then
   echo "Starting startx service ..."
- startx & # Investigar si no lanzarlo en 2 plano y controlarlo mediante stdout y enviar el CTRL^C para cierre controlado
+  startx &> /dev/null & # Investigar si no lanzarlo en 2 plano y controlarlo mediante stdout y enviar el CTRL^C para cierre controlado
 fi
 
