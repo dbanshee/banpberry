@@ -17,17 +17,17 @@
 
 
 static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2);
-static void sprintSOCommand(char *str, ssize_t buffSize, processContext *procCtx);
+static void sprintOSCommand(char *str, ssize_t buffSize, processContext *procCtx);
 
 
-void initializeProcessContex(processContext *procCtx){
+void initializeProcessContext(processContext *procCtx){
     procCtx->binPath    = NULL;
     procCtx->args       = NULL;
     procCtx->status     = UNINITIALIZED;
     memset(procCtx->fd, 0, sizeof(char)*2);
 }
 
-static void sprintSOCommand(char *str, ssize_t buffSize, processContext *procCtx){
+static void sprintOSCommand(char *str, ssize_t buffSize, processContext *procCtx){
     int i;
     int offset = 0, acumOffset = 0;
     
@@ -100,8 +100,8 @@ void createProcess(processContext *procCtx){
         
         
         char soCmd [MAXSOCMDSIZE];
-        sprintSOCommand(soCmd, MAXSOCMDSIZE, procCtx);
-        blog(LOG_INFO, "Executing SO Command : %s", soCmd);
+        sprintOSCommand(soCmd, MAXSOCMDSIZE, procCtx);
+        blog(LOG_INFO, "Executing OS Command : %s", soCmd);
         
     }    
 }
@@ -259,7 +259,7 @@ ssize_t sendToProcess(processContext *procCtx, char *buff, size_t buffSize){
     size_t nwrite = write(procCtx->fd[0], buff, buffSize);
     
     if(nwrite == -1){
-        blog(LOG_ERROR, "Error. Write on process pipe failed.");
+        blog(LOG_ERROR, "Error. Write to process pipe failed.");
         return -1;
     }else{
         blog(LOG_DEBUG, "Write to process : (bytes : %d) '%s'", nwrite, buff);

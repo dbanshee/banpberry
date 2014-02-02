@@ -33,7 +33,7 @@ typedef struct processContext {
 } processContext;
 
 // Public Functions
-void initializeProcessContex(processContext *procCtx);
+void initializeProcessContext(processContext *procCtx);
 void createProcess(processContext *procCtx);
 void waitProcess(processContext *procCtx);
 int existsProcess(const char* processName);

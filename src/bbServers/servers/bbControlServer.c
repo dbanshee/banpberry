@@ -97,7 +97,7 @@ int vncServiceHandler(char **args, int nargs);
 int getAllServiceStatusHandler(char **args, int nargs, int connfd);
 
 
-static int genericvBBScriptHandler(char * service, char * command, char** args, int nargs);
+static int genericBBScriptHandler(char * service, char * command, char** args, int nargs);
 
 
 
@@ -116,15 +116,15 @@ const char requestHeader [1024] =
 - bbControlServer -\n\
 -------------------\n\
 Usage :\n\n\
-  APACHE <[start|stop|restart]> [force]\n\
-  DHCP <[start|stop|restart]> [force]\n\
-  DNS <[start|stop|restart]> [force]\n\
-  FTP <[start|stop|restart]> [force]\n\
-  MOPIDY <[start|stop|restart]> [force]\n\
-  STARTX <[start|stop|restart]> [force]\n\
-  OMXPLAYER <[start|stop|restart]> [force]\n\
-  VLC <start|stop|restart> [force]\n\
-  VNC [start|stop|restart] [force]\n\
+  APACHE <start|stop|restart> [force]\n\
+  DHCP <start|stop|restart> [force]\n\
+  DNS <start|stop|restart> [force]\n\
+  FTP <start|stop|restart> [force]\n\
+  MOPIDY <start|stop|restart> [force]\n\
+  STARTX <start|stop|restart> [force]\n\
+  OMXPLAYER stop [force]\n\
+  VLC stop [force]\n\
+  VNC <start|stop|restart> [force]\n\
 \n\
   GETALLSERVICESTATUS\n\
 BBCONTROL>";
@@ -209,11 +209,11 @@ int controlHandler(int connfd){
     blog(LOG_INFO, "Waiting client data ...");
     nread = serverReadBuffer(connfd, line, MAXBUFFSIZE-1);
     
-    if(nread == -1){
+    if(nread == -1)
         blog(LOG_ERROR, "Error reading from client.");
-    }else if(nread == 0){
+    else if(nread == 0)
         serverWriteBuffer(connfd, REQUEST_ERROR, strlen(REQUEST_ERROR));
-    }else{
+    else{
    
         // Process request
         int requestError = 0;
@@ -260,13 +260,13 @@ int controlHandler(int connfd){
     return 0;
 }
 
-static int genericvBBScriptHandler(char *service, char *command, char** args, int nargs){
+static int genericBBScriptHandler(char *service, char *command, char** args, int nargs){
     int requestOk = 1;
     
     blog(LOG_INFO, "%s Service action requested", service);
     
     processContext procCtx;
-    initializeProcessContex(&procCtx);
+    initializeProcessContext(&procCtx);
     
     if((nargs < 2) || (nargs > 3) ||
        (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
@@ -306,39 +306,39 @@ static int genericvBBScriptHandler(char *service, char *command, char** args, in
 }
 
 int apacheServiceHandler(char **args, int nargs){
-    return genericvBBScriptHandler(APACHE_SERVICE, APACHE_EXEC, args, nargs);
+    return genericBBScriptHandler(APACHE_SERVICE, APACHE_EXEC, args, nargs);
 }
 
 int ftpServiceHandler(char **args, int nargs){
-    return genericvBBScriptHandler(FTP_SERVICE, FTP_EXEC, args, nargs);
+    return genericBBScriptHandler(FTP_SERVICE, FTP_EXEC, args, nargs);
 }
 
 int dhcpServiceHandler(char **args, int nargs){
-    return genericvBBScriptHandler(DHCP_SERVICE, DHCP_EXEC, args, nargs);
+    return genericBBScriptHandler(DHCP_SERVICE, DHCP_EXEC, args, nargs);
 }
 
 int dnsServiceHandler(char **args, int nargs){
-    return genericvBBScriptHandler(DNS_SERVICE, DNS_EXEC, args, nargs);
+    return genericBBScriptHandler(DNS_SERVICE, DNS_EXEC, args, nargs);
 }
 
 int mopidyServiceHandler(char **args, int nargs){
-    return genericvBBScriptHandler(MOPIDY_SERVICE, MOPIDY_EXEC, args, nargs);
+    return genericBBScriptHandler(MOPIDY_SERVICE, MOPIDY_EXEC, args, nargs);
 }
 
 int startXServiceHandler(char **args, int nargs){
-    return genericvBBScriptHandler(STARTX_SERVICE, STARTX_EXEC, args, nargs);
+    return genericBBScriptHandler(STARTX_SERVICE, STARTX_EXEC, args, nargs);
 }
 
 int omxplayerServiceHandler(char **args, int nargs){
-    return genericvBBScriptHandler(OMXPLAYER_SERVICE, OMXPLAYER_EXEC, args, nargs);
+    return genericBBScriptHandler(OMXPLAYER_SERVICE, OMXPLAYER_EXEC, args, nargs);
 }
 
 int vlcServiceHandler(char **args, int nargs){
-    return genericvBBScriptHandler(VLC_SERVICE, VLC_EXEC, args, nargs);
+    return genericBBScriptHandler(VLC_SERVICE, VLC_EXEC, args, nargs);
 }
 
 int vncServiceHandler(char **args, int nargs){
-    return genericvBBScriptHandler(VNC_SERVICE, VNC_EXEC, args, nargs);
+    return genericBBScriptHandler(VNC_SERVICE, VNC_EXEC, args, nargs);
 }
 
 int getAllServiceStatusHandler(char **args, int nargs, int connfd){
@@ -346,9 +346,6 @@ int getAllServiceStatusHandler(char **args, int nargs, int connfd){
     char buff[MAXBUFFSIZE];
     
     blog(LOG_INFO, "Service Get All Status requested");
-    
-    processContext procCtx;
-    initializeProcessContex(&procCtx);
     
     if(nargs != 1){
         blog(LOG_ERROR, "Bad usage.");
