@@ -22,11 +22,9 @@ typedef struct serverSocketContext {
 
 
 // Public Functions
-int  socketServerLoop(serverSocketContext *serverCtx);
-void abortServer(serverSocketContext *serverCtx);
-void finishServer(serverSocketContext *serverCtx);
-
-
+int     socketServerLoop(serverSocketContext *serverCtx);
+void    abortServer(serverSocketContext *serverCtx);
+void    finishServer(serverSocketContext *serverCtx);
 ssize_t serverReadBuffer(int connfd, char *buff, size_t buffSize);
 ssize_t serverWriteBuffer(int connfd, char *buff, size_t buffSize);
 

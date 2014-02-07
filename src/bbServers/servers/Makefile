@@ -7,9 +7,9 @@ bbMediaServer.o : bbMediaServer.c
 	$(CC) -c $(CCFLAGS) bbMediaServer.c
 
 
-all : bbControlServer.o #bbMediaServer.o
-	 $(CC) bbControlServer.o ../libs/stringutils.o ../libs/serversocket.o ../libs/logger.o ../libs/procmanager.o -o bbControlServer
-#	 gcc bbMediaServer.o ../libs/serversocket.o -o bbMediaServer
+all : bbControlServer.o bbMediaServer.o
+	$(CC) bbControlServer.o ../libs/stringutils.o ../libs/serversocket.o ../libs/logger.o ../libs/procmanager.o -o bbControlServer
+	$(CC) bbMediaServer.o   ../libs/stringutils.o ../libs/serversocket.o ../libs/logger.o ../libs/procmanager.o -o bbMediaServer
 
 clean:
 	rm -rf *.o
@@ -17,3 +17,4 @@ clean:
 	
 install:
 	cp bbControlServer /bb/bin
+	cp bbMediaServer   /bb/bin

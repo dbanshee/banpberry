@@ -116,7 +116,7 @@ static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2){
     sprintf(procDirPath, "/proc/%d/fd", pid);
     
     if((dp = opendir(procDirPath)) == NULL){
-        blog(LOG_ERROR, "Error opening %s directory.", pid);
+        blog(LOG_ERROR, "Error opening directory : %s", procDirPath);
         return -1;
     }
     
@@ -154,12 +154,12 @@ void waitProcess(processContext *procCtx){
     close(procCtx->fd[1]);
     
     if(pid == 0){
-        blog(LOG_INFO, "Blocking Wait for process pid %d return 0. Anormal case.", procCtx->pid);
+        blog(LOG_INFO, "Blocking Wait for process pid %d return 0. Anormal case", procCtx->pid);
         procCtx->status = ERROR;
     }else if(pid == procCtx->pid){ // Status process has changed 
         
         if(WIFEXITED(status)){
-            blog(LOG_INFO, "Process pid : %d finish normally.", procCtx->pid);
+            blog(LOG_INFO, "Process pid : %d finish normally", procCtx->pid);
             procCtx->status = FINISHED;
             
             if(WEXITSTATUS(status) != 0){
@@ -168,7 +168,7 @@ void waitProcess(processContext *procCtx){
             }
 
             if(WIFSIGNALED(status))
-                blog(LOG_INFO, "Process pid : %d signaled by signal %d.", procCtx->pid, WTERMSIG(status));
+                blog(LOG_INFO, "Process pid : %d signaled by signal %d", procCtx->pid, WTERMSIG(status));
         }else{
             blog(LOG_ERROR, "Process pid : %d exited anormally.", procCtx->pid);
             procCtx->status = ERROR;
@@ -194,7 +194,7 @@ int getProcessStatus(processContext *procCtx){
         if(pid == procCtx->pid){ // Status process has changed
             
             if(WIFEXITED(status)){
-                blog(LOG_INFO, "Process pid : %d finish normally.", procCtx->pid);
+                blog(LOG_INFO, "Process pid : %d finish normally", procCtx->pid);
                 procCtx->status = FINISHED;
                 
                 
@@ -204,9 +204,9 @@ int getProcessStatus(processContext *procCtx){
                 }
 
                 if(WIFSIGNALED(status))
-                    blog(LOG_INFO, "Process pid : %d signaled by signal %d.", procCtx->pid, WTERMSIG(status));
+                    blog(LOG_INFO, "Process pid : %d signaled by signal %d", procCtx->pid, WTERMSIG(status));
             }else
-                blog(LOG_ERROR, "Process pid : %d exited anormally.", procCtx->pid);
+                blog(LOG_ERROR, "Process pid : %d exited anormally", procCtx->pid);
             
             close(procCtx->fd[0]);
             close(procCtx->fd[1]);
@@ -226,7 +226,7 @@ int getProcessStatus(processContext *procCtx){
 ssize_t readFromProcess(processContext *procCtx, char *buff, size_t buffSize){
     
     if(fcntl(procCtx->fd[1], F_GETFL) == -1){
-        blog(LOG_ERROR, "Error. Read process pipe is not ready.");
+        blog(LOG_ERROR, "Error. Read process pipe is not ready");
         return -1;
     }
     
@@ -234,14 +234,14 @@ ssize_t readFromProcess(processContext *procCtx, char *buff, size_t buffSize){
     ssize_t nread = read(procCtx->fd[1], buff, buffSize);
     
     if(fcntl(procCtx->fd[1], F_GETFL) == -1){
-        blog(LOG_ERROR, "Error. Read Process pipe is not ready.");
+        blog(LOG_ERROR, "Error. Read Process pipe is not ready");
         return -1;
     }else if(nread == -1){
         blog(LOG_WARN, "Empty Read.");
         buff[0] = '\0';
         return 0;
     }else{
-        blog(LOG_DEBUG, "Read From Process: (bytes : %d)", nread);
+        blog(LOG_DEBUG, "Read From Process (%d bytes) : '%s'", nread);
         return nread;
     }
 }
@@ -249,7 +249,7 @@ ssize_t readFromProcess(processContext *procCtx, char *buff, size_t buffSize){
 ssize_t sendToProcess(processContext *procCtx, char *buff, size_t buffSize){
     
     if(fcntl(procCtx->fd[0], F_GETFL) == -1){
-        blog(LOG_ERROR, "Error. Write process pipe is not ready.");
+        blog(LOG_ERROR, "Error. Write process pipe is not ready");
         return -1;
     }   
     
@@ -259,13 +259,35 @@ ssize_t sendToProcess(processContext *procCtx, char *buff, size_t buffSize){
     size_t nwrite = write(procCtx->fd[0], buff, buffSize);
     
     if(nwrite == -1){
-        blog(LOG_ERROR, "Error. Write to process pipe failed.");
+        blog(LOG_ERROR, "Error. Write to process pipe failed");
         return -1;
     }else{
-        blog(LOG_DEBUG, "Write to process : (bytes : %d) '%s'", nwrite, buff);
+        blog(LOG_DEBUG, "Write to process (%d bytes) : '%s'", nwrite, buff);
         return nwrite;
     }
 }
+
+
+void signalProcess(processContext *procCtx, int signal){
+        
+    if (procCtx->status == UNINITIALIZED){
+        blog(LOG_WARN, "Kill (%d) to UNINITIALIZED process");
+        return;
+    } 
+    
+    if(procCtx->status == RUNNING){
+        blog(LOG_WARN, "Kill (%d) to STOPPED process pid : %d",  signal, procCtx->pid);
+    }if(procCtx->status == STOPPED){
+        blog(LOG_WARN, "Kill (%d) to STOPPED process pid : %d",  signal, procCtx->pid);
+    }else if(procCtx->status == FINISHED){
+        blog(LOG_WARN, "Kill (%d) to FINISHED process pid : %d", signal, procCtx->pid);
+    }else if(procCtx->status == ERROR){
+        blog(LOG_WARN, "Kill (%d) to ERROR process pid : %d",    signal, procCtx->pid);
+    }
+       
+    kill(procCtx->pid, signal);
+}
+
 
 static int isNumeric (const char * s)
 {
@@ -286,7 +308,7 @@ int existsProcess(const char *processName){
 
     
     if((dp = opendir("/proc")) == NULL){
-        blog(LOG_ERROR, "Error opening '/proc' directory.");
+        blog(LOG_ERROR, "Error opening '/proc' directory");
         return -1;
     }
     

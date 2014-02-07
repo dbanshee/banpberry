@@ -110,7 +110,7 @@ ssize_t serverReadBuffer(int connfd, char *buff, size_t buffSize){
         return 0;
     }else{
         cleanLine(buff);
-        blog(LOG_DEBUG, "Client Request : (bytes : %d) '%s'", nread, buff);
+        blog(LOG_DEBUG, "Client Request (%d bytes) : '%s'", nread, buff);
         return nread;
     }
 }
@@ -134,7 +134,7 @@ ssize_t serverWriteBuffer(int connfd, char *buff, size_t buffSize){
         blog(LOG_ERROR, "Error sending buffer.");
         return -1;
     }else{
-        blog(LOG_DEBUG, "Server Response : (bytes : %d) '%s'", nwrite, buff);
+        blog(LOG_DEBUG, "Server Response (%d bytes) : '%s'", nwrite, buff);
         return nwrite;
     }
 }

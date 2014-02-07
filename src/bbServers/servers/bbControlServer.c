@@ -164,6 +164,7 @@ int main(int argc, char *argv){
     return 0;
 }
 
+// SO Signal handlers
 void signalHandler(int sigNum){
     
     if(sigNum == SIGTERM)
@@ -176,7 +177,7 @@ void signalHandler(int sigNum){
     finishServer(&serverCtx);
 }
 
-
+// Check external binaries and scripts.
 int checkServicesExecutables(){
     int i;
     struct stat fstat;
@@ -184,7 +185,7 @@ int checkServicesExecutables(){
     
     for(i = 0; i < NEXECS; i++)
         if(stat(soExecs[i], &fstat) == -1){
-            blog(LOG_WARN, "bbControlService required file '%s' not found.", soExecs[i]);
+            blog(LOG_WARN, "Banpberry Control Service required file '%s' not found.", soExecs[i]);
             existsAll = -1;
         }
     
@@ -194,7 +195,9 @@ int checkServicesExecutables(){
 
 
 /*
- * Manejador de peticion de conexion
+ * Conexion Request Handler.
+ * 
+ * Invoqued by socketServerLoop.
  */
 int controlHandler(int connfd){
     ssize_t nread;
@@ -243,7 +246,7 @@ int controlHandler(int connfd){
                 requestError = vlcServiceHandler(spl, nargs);
             else if(strcasecmp(spl[0], VNC_SERVICE) == 0)
                 requestError = vncServiceHandler(spl, nargs);
-             else if(strcasecmp(spl[0], GET_ALL_SERVICE_STATUS) == 0)
+            else if(strcasecmp(spl[0], GET_ALL_SERVICE_STATUS) == 0)
                 requestError = getAllServiceStatusHandler(spl, nargs, connfd);
             else
                 requestError = -1;
@@ -260,6 +263,11 @@ int controlHandler(int connfd){
     return 0;
 }
 
+/*
+ * Generic handler. Handles request like <service> <start|stop|restart>.
+ * 
+ *      Run and wait for /bin/bash <servicebbScript>.sh  <start|stop|restart>
+ */
 static int genericBBScriptHandler(char *service, char *command, char** args, int nargs){
     int requestOk = 1;
     
@@ -278,7 +286,7 @@ static int genericBBScriptHandler(char *service, char *command, char** args, int
     }
     
     procCtx.binPath     = BASH_EXEC;
-    procCtx.args        = (char**) malloc(sizeof(char*)*5);
+    procCtx.args        = (char**) malloc(sizeof(char*)*5); // Need to free
     
     procCtx.args[0]     = BASH_EXEC;
     procCtx.args[1]     = command;
@@ -353,7 +361,7 @@ int getAllServiceStatusHandler(char **args, int nargs, int connfd){
     }
     
     for(i = 0; i < NPROCS; i++){
-        if(existsProcess(procNames[i]) == 1)
+        if(existsProcess(procNames[i]) == 1) // Batch alternative check process function?
             snprintf(buff, MAXBUFFSIZE, "%s %s\n", servNames[i], SERVICE_ON);
         else
             snprintf(buff, MAXBUFFSIZE, "%s %s\n", servNames[i], SERVICE_OFF);

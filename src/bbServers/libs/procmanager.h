@@ -33,13 +33,18 @@ typedef struct processContext {
 } processContext;
 
 // Public Functions
-void initializeProcessContext(processContext *procCtx);
-void createProcess(processContext *procCtx);
-void waitProcess(processContext *procCtx);
-int existsProcess(const char* processName);
 
-int sendToProcess(processContext   *procCtx, char *buff, size_t buffSize);
-int readFromProcess(processContext *procCtx, char *buff, size_t buffSize);
+// Process context dependent
+void    initializeProcessContext(processContext *procCtx);
+void    createProcess(processContext *procCtx);
+void    waitProcess(processContext *procCtx);
+int     sendToProcess(processContext   *procCtx, char *buff, size_t buffSize);
+int     readFromProcess(processContext *procCtx, char *buff, size_t buffSize);
+
+void signalProcess(processContext *procCtx, int signal);
+
+// General process
+int existsProcess(const char* processName);
 
 #endif	/* PROCMANAGER_H */
 
