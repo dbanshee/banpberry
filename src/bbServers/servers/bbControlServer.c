@@ -273,8 +273,7 @@ static int genericBBScriptHandler(char *service, char *command, char** args, int
     
     blog(LOG_INFO, "%s Service action requested", service);
     
-    processContext procCtx;
-    initializeProcessContext(&procCtx);
+    processContext *procCtx;
     
     if((nargs < 2) || (nargs > 3) ||
        (nargs >= 2 && (strcasecmp(args[1], START_COMMAND)    != 0 &&  
@@ -285,30 +284,24 @@ static int genericBBScriptHandler(char *service, char *command, char** args, int
         return -1;
     }
     
-    procCtx.binPath     = BASH_EXEC;
-    procCtx.args        = (char**) malloc(sizeof(char*)*5); // Need to free
     
-    procCtx.args[0]     = BASH_EXEC;
-    procCtx.args[1]     = command;
-    procCtx.args[2]     = args[1];
+    if(nargs == 3)
+        procCtx = createProcessContext(4, BASH_EXEC, command, args[1], args[2]);
+    else
+        procCtx = createProcessContext(3, BASH_EXEC, command, args[1]);
     
-    if(nargs == 3){
-        procCtx.args[3] = args[2]; // Opcion FORCE
-        procCtx.args[4] = NULL;
-    }else
-        procCtx.args[3] = NULL;
+    createProcess(procCtx);
     
-    createProcess(&procCtx);
+    if(procCtx->status == RUNNING)
+        waitProcess(procCtx);
     
-    if(procCtx.status == RUNNING)
-        waitProcess(&procCtx);
-    
-    if(procCtx.status != FINISHED){
+    if(procCtx->status != FINISHED){
         blog(LOG_ERROR, "Error executing %s Service", service);
         requestOk = -1;
     }
     
-    free(procCtx.args);
+    
+    freeProcessContext(procCtx);
     
     return requestOk;
 }

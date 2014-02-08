@@ -6,6 +6,8 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <readline/chardefs.h>
+#include <stdarg.h>
 
 
 #include "procmanager.h"
@@ -20,11 +22,59 @@ static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2);
 static void sprintOSCommand(char *str, ssize_t buffSize, processContext *procCtx);
 
 
-void initializeProcessContext(processContext *procCtx){
+processContext* createProcessContext(int nargs, ...){
+    int i = 0;
+    processContext *procCtx = NULL;
+    char* arg;
+
+    
+    if((procCtx = (processContext*) malloc(sizeof(processContext))) == NULL){
+        blog(LOG_ERROR, "Error allocating memory for processContext");
+        return NULL;
+    }
+    
+    memset(procCtx, 0, sizeof(processContext));
+    
     procCtx->binPath    = NULL;
     procCtx->args       = NULL;
     procCtx->status     = UNINITIALIZED;
     memset(procCtx->fd, 0, sizeof(char)*2);
+    
+    
+    // Processing args
+    if((procCtx->args =  (char**) malloc(sizeof(char*)*(nargs+1))) == NULL){
+        blog(LOG_ERROR, "Error allocating memory for processContext args");
+        free(procCtx);
+        return NULL;
+    }
+        
+    va_list vlist;
+    va_start(vlist, nargs);
+
+    for(i = 0; i < nargs; i++){
+        arg = va_arg(vlist, char*);
+
+        if(i == 0){ // binPath
+            procCtx->binPath = (char *) malloc(sizeof(char*)*(strlen(arg)+1));
+            strcpy(procCtx->binPath, arg);
+        }
+
+        procCtx->args[i] = (char *) malloc(sizeof(char*)*(strlen(arg)+1));
+        strcpy(procCtx->args[i], arg);
+    }
+    
+    va_end(vlist);
+    procCtx->args[nargs] = NULL; // Really unnecesary. memset set all 0.
+    return procCtx;
+}
+
+void freeProcessContext(processContext * procCtx){
+    if(procCtx != NULL){
+        free(procCtx->args); // Carefull
+        free(procCtx);
+    }
+
+    procCtx == NULL;
 }
 
 static void sprintOSCommand(char *str, ssize_t buffSize, processContext *procCtx){
@@ -171,7 +221,14 @@ void waitProcess(processContext *procCtx){
                 blog(LOG_INFO, "Process pid : %d signaled by signal %d", procCtx->pid, WTERMSIG(status));
         }else{
             blog(LOG_ERROR, "Process pid : %d exited anormally.", procCtx->pid);
-            procCtx->status = ERROR;
+            
+            if(WIFSIGNALED(status)){
+                blog(LOG_INFO, "Process pid : %d signaled by signal %d", procCtx->pid, WTERMSIG(status));
+                procCtx->status = FINISHED;
+            }else{
+                blog(LOG_INFO, "Process pid : %d status anormall case.", procCtx->pid);
+                procCtx->status = ERROR;
+            }
         }
     }else{
         blog(LOG_ERROR, "Error waiting process pid : %d ", procCtx->pid);
@@ -194,19 +251,22 @@ int getProcessStatus(processContext *procCtx){
         if(pid == procCtx->pid){ // Status process has changed
             
             if(WIFEXITED(status)){
-                blog(LOG_INFO, "Process pid : %d finish normally", procCtx->pid);
+                blog(LOG_INFO, "Process pid : %d finish normally. Exit status : %d", procCtx->pid, WEXITSTATUS(status));
                 procCtx->status = FINISHED;
                 
-                
-                if(WEXITSTATUS(status) != 0){
-                    blog(LOG_INFO, "Process pid : %d exit status : %d", procCtx->pid, WEXITSTATUS(status));
-                    procCtx->status = ERROR;
-                }
-
                 if(WIFSIGNALED(status))
                     blog(LOG_INFO, "Process pid : %d signaled by signal %d", procCtx->pid, WTERMSIG(status));
-            }else
+            }else{
                 blog(LOG_ERROR, "Process pid : %d exited anormally", procCtx->pid);
+                
+                if(WIFSIGNALED(status)){
+                    blog(LOG_INFO, "Process pid : %d signaled by signal %d", procCtx->pid, WTERMSIG(status));
+                    procCtx->status = FINISHED;
+                }else{
+                    blog(LOG_INFO, "Process pid : %d status anormall case.", procCtx->pid);
+                    procCtx->status = ERROR;
+                }
+            }
             
             close(procCtx->fd[0]);
             close(procCtx->fd[1]);
@@ -225,6 +285,14 @@ int getProcessStatus(processContext *procCtx){
 
 ssize_t readFromProcess(processContext *procCtx, char *buff, size_t buffSize){
     
+    if(procCtx->status == UNINITIALIZED){
+        blog(LOG_ERROR, "Error. Read from UNINITIALIZED process.");
+        return -1;
+    }
+    
+    if(procCtx->status != RUNNING)
+        blog(LOG_WARN, "Read from non RUNNING process.");
+    
     if(fcntl(procCtx->fd[1], F_GETFL) == -1){
         blog(LOG_ERROR, "Error. Read process pipe is not ready");
         return -1;
@@ -241,12 +309,20 @@ ssize_t readFromProcess(processContext *procCtx, char *buff, size_t buffSize){
         buff[0] = '\0';
         return 0;
     }else{
-        blog(LOG_DEBUG, "Read From Process (%d bytes) : '%s'", nread);
+        blog(LOG_DEBUG, "Read From Process (%d bytes) : '%s'", nread, buff);
         return nread;
     }
 }
 
 ssize_t sendToProcess(processContext *procCtx, char *buff, size_t buffSize){
+    
+    if(procCtx->status == UNINITIALIZED){
+        blog(LOG_ERROR, "Error. Send to UNINITIALIZED process.");
+        return -1;
+    }
+    
+    if(procCtx->status != RUNNING)
+        blog(LOG_WARN, "Send from non RUNNING process.");
     
     if(fcntl(procCtx->fd[0], F_GETFL) == -1){
         blog(LOG_ERROR, "Error. Write process pipe is not ready");
@@ -257,6 +333,7 @@ ssize_t sendToProcess(processContext *procCtx, char *buff, size_t buffSize){
         buffSize = strlen(buff);
     
     size_t nwrite = write(procCtx->fd[0], buff, buffSize);
+    //fsync(procCtx->fd[0]);
     
     if(nwrite == -1){
         blog(LOG_ERROR, "Error. Write to process pipe failed");
@@ -275,24 +352,28 @@ void signalProcess(processContext *procCtx, int signal){
         return;
     } 
     
-    if(procCtx->status == RUNNING){
+    if(procCtx->status == RUNNING)
+        blog(LOG_WARN, "Kill (%d) to RUNNING process pid : %d",  signal, procCtx->pid);
+    else if(procCtx->status == STOPPED)
         blog(LOG_WARN, "Kill (%d) to STOPPED process pid : %d",  signal, procCtx->pid);
-    }if(procCtx->status == STOPPED){
-        blog(LOG_WARN, "Kill (%d) to STOPPED process pid : %d",  signal, procCtx->pid);
-    }else if(procCtx->status == FINISHED){
+    else if(procCtx->status == FINISHED)
         blog(LOG_WARN, "Kill (%d) to FINISHED process pid : %d", signal, procCtx->pid);
-    }else if(procCtx->status == ERROR){
+    else if(procCtx->status == ERROR)
         blog(LOG_WARN, "Kill (%d) to ERROR process pid : %d",    signal, procCtx->pid);
-    }
+    else
+        blog(LOG_ERROR, "Kill (%d) to UNKOWN process pid : %d",    signal, procCtx->pid);
        
-    kill(procCtx->pid, signal);
+    if(kill(procCtx->pid, signal))
+        blog(LOG_INFO,  "Process pid : %d, signaled with : %d signal", signal);
+    else
+        blog(LOG_ERROR, "Failed signaling process pid : %d, with signal : %d", signal);
 }
 
 
 static int isNumeric (const char * s)
 {
     if (s == NULL || *s == '\0' || isspace(*s))
-      return 0;
+        return 0;
     
     char * p;
     strtod (s, &p);

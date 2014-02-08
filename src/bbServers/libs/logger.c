@@ -47,6 +47,8 @@ void blog(int level, char *format, ...){
         printf("[DEBUG] <%s>  %s\n", getCurrentDate(), msg);
     else if(level == LOG_WARN)
         printf("[WARN]  <%s>  %s\n", getCurrentDate(), msg);
+    else if(level == LOG_TRACE)
+        printf("[TRACE]  <%s>  %s\n", getCurrentDate(), msg);
     else if(level == LOG_ERROR){
         if(errno == 0)
             printf("[ERROR] <%s>  %s\n", getCurrentDate(), msg);

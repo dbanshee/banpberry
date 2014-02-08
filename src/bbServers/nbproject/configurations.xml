@@ -44,7 +44,7 @@
           <buildCommandWorkingDir>.</buildCommandWorkingDir>
           <buildCommand>${MAKE} -f Makefile</buildCommand>
           <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
-          <executablePath>servers/bbControlServer</executablePath>
+          <executablePath>servers/bbMediaServer</executablePath>
         </makeTool>
       </makefileType>
       <item path="libs/logger.c" ex="false" tool="0" flavor2="0">
