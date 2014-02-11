@@ -156,6 +156,26 @@ void createProcess(processContext *procCtx){
     }    
 }
 
+void finishProcess(processContext* procCtx){
+    
+    blog(LOG_WARN, "Process %s (pid : %d) Sending SIGTERM signal", procCtx->binPath, procCtx->pid);
+    signalProcess(procCtx, SIGTERM);
+
+    updateProcessStatus(procCtx);
+    if(procCtx->status != FINISHED){
+
+        blog(LOG_WARN, "Process %s (pid : %d) status : %d after SIGTERM signal. Sending SIGKILL signal.", procCtx->binPath, procCtx->pid, procCtx->status);
+
+        signalProcess(procCtx, SIGKILL);
+        updateProcessStatus(procCtx);
+
+        blog(LOG_WARN, "Process %s (pid : %d) status : %d after SIGKILL signal.", procCtx->binPath, procCtx->status);
+
+        if(procCtx->status != FINISHED)
+            blog(LOG_INFO, "Force free resources. Zombie risk?? Uuuhhh ...");
+    }
+}
+
 static int closeNonStdDescriptors(pid_t pid, int fd1, int fd2){
     char procDirPath [256];
     DIR *dp;
@@ -236,7 +256,7 @@ void waitProcess(processContext *procCtx){
     }
 }
 
-int getProcessStatus(processContext *procCtx){
+void updateProcessStatus(processContext *procCtx){
     pid_t pid;
     int status;
     
@@ -246,7 +266,7 @@ int getProcessStatus(processContext *procCtx){
         pid = waitpid(procCtx->pid, &status, WNOHANG);
 
         if(pid == 0) // Status process has not changed
-            return procCtx->status;
+            return;
         
         if(pid == procCtx->pid){ // Status process has changed
             
@@ -279,8 +299,6 @@ int getProcessStatus(processContext *procCtx){
             close(procCtx->fd[1]);
         }
     }
-    
-    return procCtx->status;
 }
 
 ssize_t readFromProcess(processContext *procCtx, char *buff, size_t buffSize){
@@ -361,7 +379,7 @@ void signalProcess(processContext *procCtx, int signal){
     else if(procCtx->status == ERROR)
         blog(LOG_WARN, "Kill (%d) to ERROR process pid : %d",    signal, procCtx->pid);
     else
-        blog(LOG_ERROR, "Kill (%d) to UNKOWN process pid : %d",    signal, procCtx->pid);
+        blog(LOG_ERROR, "Kill (%d) to UNKOWN process pid : %d",  signal, procCtx->pid);
        
     if(kill(procCtx->pid, signal))
         blog(LOG_INFO,  "Process pid : %d, signaled with : %d signal", signal);

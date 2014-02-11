@@ -32,16 +32,15 @@ typedef struct processContext {
     int    fd [2];
 } processContext;
 
-// Public Functions
-
 // Process context dependent
 processContext* createProcessContext(int nargs, ...);
+void            finishProcess(processContext* procCtx);
 void            freeProcessContext(processContext * procCtx);
 void            createProcess(processContext *procCtx);
 void            waitProcess(processContext *procCtx);
 int             sendToProcess(processContext   *procCtx, char *buff, size_t buffSize);
 int             readFromProcess(processContext *procCtx, char *buff, size_t buffSize);
-int             getProcessStatus(processContext *procCtx);
+void            updateProcessStatus(processContext *procCtx);
 
 void            signalProcess(processContext *procCtx, int signal);
 
