@@ -30,6 +30,17 @@
 #define PREV_SERVICE            "PREV"
 #define VOLUP_SERVICE           "VOLUP"
 #define VOLDOWN_SERVICE         "VOLDOWN"
+#define SEEKF_SERVICE           "SEEKF"
+#define SEEKB_SERVICE           "SEEKB"
+#define SEEKFF_SERVICE          "SEEKFF"
+#define SEEKBB_SERVICE          "SEEKBb"
+#define LOOP_SERVICE            "LOOP"
+#define FASTER_SERVICE          "FASTER"
+#define SLOWER_SERVICE          "SLOWER"
+#define INFO_SERVICE            "INFO"
+#define ATRACK_SERVICE          "ATRACK"
+#define STRACK_SERVICE          "STRACK"
+#define GETTRACKS_SERVICE       "GETTRACKS"
 
 // Services
 #define NOPTIONS                2
@@ -48,13 +59,25 @@
 #define VLC                     0
 #define OMXPLAYER               1
 
+// Vlc specifics commands
 #define VLC_PLAY_CMD            "play\n"
 #define VLC_PAUSE_CMD           "pause\n"
 #define VLC_QUIT_CMD            "quit\n"
 #define VLC_NEXT_CMD            "next\n"
 #define VLC_PREV_CMD            "prev\n"
-#define VLC_VOLUP_CMD           "volup 1\n"
-#define VLC_VOLDOWN_CMD         "voldown 1\n"
+#define VLC_VOLUP_CMD           "volup 10\n"
+#define VLC_VOLDOWN_CMD         "voldown 10\n"
+#define VLC_SEEKF_CMD           "seek 20\n"
+#define VLC_SEEKB_CMD           "seek -20\n"
+#define VLC_SEEKFF_CMD          "seek 100\n"
+#define VLC_SEEKBB_CMD          "seek -100\n"
+#define VLC_LOOPON_CMD          "loop on\n"
+#define VLC_LOOPOFF_CMD         "loop off\n"
+#define VLC_FASTER_CMD          "faster\n"
+#define VLC_SLOWER_CMD          "slower\n"
+#define VLC_INFO_CMD            "info\n"
+#define VLC_ATRACK_CMD          "atrack\n"
+#define VLC_STRACK_CMD          "vtrack\n"
 
 
 
@@ -80,6 +103,20 @@ static int nextHandler(char** args, int nargs);
 static int prevHandler(char** args, int nargs);
 static int volUpHandler(char** args, int nargs);
 static int volDownHandler(char** args, int nargs);
+static int seekFHandler(char** args, int nargs);
+static int seekBHandler(char** args, int nargs);
+static int seekFFHandler(char** args, int nargs);
+static int seekBBHandler(char** args, int nargs);
+static int loopHandler(char** args, int nargs);
+static int fasterHandler(char** args, int nargs);
+static int slowerHandler(char** args, int nargs);
+static int infoHandler(char** args, int nargs);
+static int atrackHandler(char** args, int nargs);
+static int strackHandler(char** args, int nargs);
+static int getTracksHandler(char** args, int nargs);
+
+
+
 
 
 static int selectMediaProcess4Uri(char *uri);
@@ -109,6 +146,18 @@ Usage :\n\n\
   PREV <vlc|omx>\n\
   VOLUP <vlc|omx>\n\
   VOLDOWN <vlc|omx>\n\
+  SEEKF <vlc|omx>\n\
+  SEEKB <vlc|omx>\n\
+  LOOP  <vlc|omx> <on|off>\n\
+  FASTER <vlc|omx>\n\
+  SLOWER <vlc|omx>\n\
+  FFASTER <vlc|omx>\n\
+  SSLOWER <vlc|omx>\n\
+  INFO <vlc|omx>\n\
+  ATRACK <vlc|omx>\n\
+  STRACK <vlc|omx>\n\
+  GETTRACKS\n\
+  BANPORNTV <on|off>\n\
 BBMEDIA>";
 
 // Global vars
@@ -229,6 +278,28 @@ int mediaHandler(int connfd){
                 requestError = volUpHandler(spl, nargs);
             else if(strcasecmp(spl[0], VOLDOWN_SERVICE) == 0)
                 requestError = volDownHandler(spl, nargs);
+            else if(strcasecmp(spl[0], SEEKF_SERVICE) == 0)
+                requestError = seekFHandler(spl, nargs);
+            else if(strcasecmp(spl[0], SEEKB_SERVICE) == 0)
+                requestError = seekBHandler(spl, nargs);
+            else if(strcasecmp(spl[0], SEEKFF_SERVICE) == 0)
+                requestError = seekFFHandler(spl, nargs);
+            else if(strcasecmp(spl[0], SEEKBB_SERVICE) == 0)
+                requestError = seekBBHandler(spl, nargs);
+            else if(strcasecmp(spl[0], LOOP_SERVICE) == 0)
+                requestError = loopHandler(spl, nargs);
+            else if(strcasecmp(spl[0], FASTER_SERVICE) == 0)
+                requestError = fasterHandler(spl, nargs);
+            else if(strcasecmp(spl[0], SLOWER_SERVICE) == 0)
+                requestError = slowerHandler(spl, nargs);
+            else if(strcasecmp(spl[0], INFO_SERVICE) == 0)
+                requestError = infoHandler(spl, nargs);
+            else if(strcasecmp(spl[0], ATRACK_SERVICE) == 0)
+                requestError = atrackHandler(spl, nargs);
+            else if(strcasecmp(spl[0], STRACK_SERVICE) == 0)
+                requestError = strackHandler(spl, nargs);
+            else if(strcasecmp(spl[0], GETTRACKS_SERVICE) == 0)
+                requestError = getTracksHandler(spl, nargs);
             else
                 requestError = -1;
         }
@@ -498,6 +569,383 @@ static int volDownHandler(char** args, int nargs){
 }
 
 
+static int seekFHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "SeekF Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_SEEKF_CMD, strlen(VLC_SEEKF_CMD));
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+static int seekBHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "SeekB Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_SEEKB_CMD, strlen(VLC_SEEKB_CMD));
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+static int seekFFHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "SeekFF Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_SEEKFF_CMD, strlen(VLC_SEEKFF_CMD));
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+static int seekBBHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "SeekBB Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_SEEKBB_CMD, strlen(VLC_SEEKBB_CMD));
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+static int loopHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "Loop Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_LOOPON_CMD, strlen(VLC_LOOPON_CMD));
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+static int fasterHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "Faster Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_FASTER_CMD, strlen(VLC_FASTER_CMD));
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+static int slowerHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "Slower Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_SLOWER_CMD, strlen(VLC_SLOWER_CMD));
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+static int infoHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "Info Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_INFO_CMD, strlen(VLC_INFO_CMD));
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+static int atrackHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "ATrack Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_ATRACK_CMD, strlen(VLC_ATRACK_CMD));
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+static int strackHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "VTrack Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_STRACK_CMD, strlen(VLC_STRACK_CMD));
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+static int getTracksHandler(char** args, int nargs){
+    int requestOk = 1;
+    int vlc, omx /*, other*/;
+    
+    
+    blog(LOG_INFO, "Prev Service requested");
+    
+    if(nargs != 2 || ((vlc   = strcasecmp(args[1], VLC_OPTION)        ) != 0  && 
+                      (omx   = strcasecmp(args[1], OMXPLAYER_OPTION)  ) != 0) /* &&
+                      (other = strcasecmp(nargs[2], OTHER_OPTION)     ) != 0) */ ){
+        blog(LOG_ERROR, "Bad usage.");
+        return -1;
+    }
+   
+    if(vlc == 0){
+        vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
+        
+        /*
+        if(isVlcRunning(vlcProcCtx) == 1)
+            sendToProcess(vlcProcCtx, VLC_VOLDOWN_CMD, strlen(VLC_VOLUP_CMD));
+        */
+    }else if(omx == 0){
+        updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
+        
+        /*
+        if(isOmxRunning())
+            sendToProcess(vlcProcCtx, OMX_PAUSE_CMD, sizeof(OMX_PAUSE_CMD));
+        */
+        
+    } /* else if (other == 0){
+       ...
+    } */
+    
+    return requestOk;
+}
+
+
 static processContext* updateProcessGlobalVar(processContext *procCtx, char* procName){
     
     if(procCtx != NULL){
@@ -565,12 +1013,12 @@ static void quitVlc(processContext* procCtx){
     
     // Try to terminate process by command
     if(isVlcRunning(procCtx) == 1){
-        sendToProcess(vlcProcCtx, VLC_QUIT_CMD, strlen(VLC_QUIT_CMD));
+        sendToProcess(procCtx, VLC_QUIT_CMD, strlen(VLC_QUIT_CMD));
         
-        vlcProcCtx = updateProcessGlobalVar(procCtx, VLC_OPTION);
+        procCtx = updateProcessGlobalVar(procCtx, VLC_OPTION);
     }
     
-    if(vlcProcCtx != NULL){
+    if(procCtx != NULL){
         blog(LOG_WARN, "Vlc cannot be closed. Force Finish");
         finishProcess(procCtx);
         freeProcessContext(procCtx);
