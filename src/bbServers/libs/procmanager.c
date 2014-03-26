@@ -6,7 +6,7 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <dirent.h>
-#include <readline/chardefs.h>
+#include <readline/chardefs.h> // libreadline6-dev
 #include <stdarg.h>
 
 
