@@ -1,0 +1,10 @@
+#ignore all files ending with .o
+*.o
+
+#ignore all data files
+#folder/*
+
+#ignore specific files
+src/bbServers/servers/bbControlServer
+src/bbServers/servers/bbMediaServer
+

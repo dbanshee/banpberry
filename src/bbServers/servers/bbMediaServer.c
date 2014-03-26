@@ -115,23 +115,19 @@ static int atrackHandler(char** args, int nargs);
 static int strackHandler(char** args, int nargs);
 static int getTracksHandler(char** args, int nargs);
 
+// General process functions
+static processContext*  updateProcessGlobalVar(processContext *procCtx, char* procName);
+static int              isProcessRunning(processContext *procCtx);
+static int              selectMediaProcess4Uri(char *uri);
 
-
-
-
-static int selectMediaProcess4Uri(char *uri);
-
-// Vlc
+// Vlc specific functions
 static processContext* openVlc(char* uri);
 static void quitVlc(processContext* procCtx);
 
 
-static processContext* updateProcessGlobalVar(processContext *procCtx, char* procName);
-static int isVlcRunning(processContext *procCtx);
-
+// Global constants
 const char *soExecs   [NEXECS]    = { BASH_EXEC, OMXPLAYER_EXEC, VLC_EXEC };
 const char *servNames [NOPTIONS]  = { OMXPLAYER_OPTION, VLC_OPTION };
-
 
 const char requestHeader [1024] = 
 "----------------\n\
@@ -162,7 +158,6 @@ BBMEDIA>";
 
 // Global vars
 serverSocketContext serverCtx;
-
 processContext *vlcProcCtx, *omxProcCtx;
 
 // Main Control Server
@@ -378,7 +373,7 @@ static int playHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_PLAY_CMD, strlen(VLC_PLAY_CMD));
     }else if(omx == 0){
         omxProcCtx = updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -412,7 +407,7 @@ static int pauseHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_PAUSE_CMD, strlen(VLC_PAUSE_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -446,7 +441,7 @@ static int nextHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_NEXT_CMD, strlen(VLC_NEXT_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -480,7 +475,7 @@ static int prevHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_PREV_CMD, strlen(VLC_PREV_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -515,7 +510,7 @@ static int volUpHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_VOLUP_CMD, strlen(VLC_VOLUP_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -551,7 +546,7 @@ static int volDownHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_VOLDOWN_CMD, strlen(VLC_VOLUP_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -586,7 +581,7 @@ static int seekFHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_SEEKF_CMD, strlen(VLC_SEEKF_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -620,7 +615,7 @@ static int seekBHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_SEEKB_CMD, strlen(VLC_SEEKB_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -654,7 +649,7 @@ static int seekFFHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_SEEKFF_CMD, strlen(VLC_SEEKFF_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -688,7 +683,7 @@ static int seekBBHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_SEEKBB_CMD, strlen(VLC_SEEKBB_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -722,7 +717,7 @@ static int loopHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_LOOPON_CMD, strlen(VLC_LOOPON_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -756,7 +751,7 @@ static int fasterHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_FASTER_CMD, strlen(VLC_FASTER_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -790,7 +785,7 @@ static int slowerHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_SLOWER_CMD, strlen(VLC_SLOWER_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -824,7 +819,7 @@ static int infoHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_INFO_CMD, strlen(VLC_INFO_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -858,7 +853,7 @@ static int atrackHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_ATRACK_CMD, strlen(VLC_ATRACK_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -892,7 +887,7 @@ static int strackHandler(char** args, int nargs){
     if(vlc == 0){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_STRACK_CMD, strlen(VLC_STRACK_CMD));
     }else if(omx == 0){
         updateProcessGlobalVar(omxProcCtx, OMXPLAYER_OPTION);
@@ -927,7 +922,7 @@ static int getTracksHandler(char** args, int nargs){
         vlcProcCtx = updateProcessGlobalVar(vlcProcCtx, VLC_OPTION);
         
         /*
-        if(isVlcRunning(vlcProcCtx) == 1)
+        if(isProcessRunning(vlcProcCtx) == 1)
             sendToProcess(vlcProcCtx, VLC_VOLDOWN_CMD, strlen(VLC_VOLUP_CMD));
         */
     }else if(omx == 0){
@@ -970,15 +965,15 @@ static processContext* updateProcessGlobalVar(processContext *procCtx, char* pro
     return NULL;
 }
     
-static int isVlcRunning(processContext *procCtx){
+static int isProcessRunning(processContext *procCtx){
     if(procCtx == NULL){
-        blog(LOG_INFO, "Vlc is not running");
+        blog(LOG_INFO, "%s is not running", procCtx->binPath);
         return -1;
     }
     
     updateProcessStatus(procCtx);
     if (procCtx->status != RUNNING){
-        blog(LOG_TRACE, "Vlc anormal status. updateVlcGlobalVar must have cleaned this process.");
+        blog(LOG_TRACE, "%s anormal status. updateVlcGlobalVar must have cleaned this process.", procCtx->status);
         return -1;
     }
     
@@ -1012,12 +1007,13 @@ static void quitVlc(processContext* procCtx){
     blog(LOG_INFO, "Closing Vlc");
     
     // Try to terminate process by command
-    if(isVlcRunning(procCtx) == 1){
+    if(isProcessRunning(procCtx) == 1){
         sendToProcess(procCtx, VLC_QUIT_CMD, strlen(VLC_QUIT_CMD));
         
         procCtx = updateProcessGlobalVar(procCtx, VLC_OPTION);
     }
     
+    // Force finish
     if(procCtx != NULL){
         blog(LOG_WARN, "Vlc cannot be closed. Force Finish");
         finishProcess(procCtx);
