@@ -33,26 +33,34 @@
 typedef u_int8_t ledColor_t[NUM_BYTES_LED];
 typedef u_int8_t ledArray_t[NUM_LEDS * NUM_BYTES_LED];
 
+
+// Signal Handler
+void signalHandler(int sigNum);
+
+// General Functions
+void delay(int secs, long nsecs);
+
+  
+// SPI Functions
 void initSPI();
 void closeSPI();
 ssize_t spiWriteBuffer(u_int8_t *buff, size_t buffSize);
 
-
+// Leds Functions
 void showLeds(ledArray_t leds);
 void setLedColor(ledArray_t leds, int numLed, ledColor_t color);
 void clearLeds();
 void fillLeds(ledArray_t leds, ledColor_t color);
 
+// Leds Modes
 void randomMode(int secDelay, long nSecDelay);
 void rayMode(long raySpeed, int secInterval, ledColor_t color);
 void rainbowMode(long speed);
 
+
+
 // Constants
 const u_int8_t LED_BUFF_SIZE = NUM_LEDS * NUM_BYTES_LED;
-
-// Signal Handler
-void signalHandler(int sigNum);
-
 
 
 // Global Vars
@@ -117,6 +125,18 @@ void signalHandler(int sigNum){
     exit(0);
 }
 
+void delay(int secs, long nsecs){
+  
+    struct timespec timeDelay;
+  
+    timeDelay.tv_sec  = secs;
+    timeDelay.tv_nsec = nsecs;
+
+    blog(LOG_DEBUG, "Waiting .... ");
+    if(nanosleep(&timeDelay, NULL) == -1)
+        blog(LOG_WARN, "Sleep not completed entirely");
+}
+
 void initSPI(){
     blog(LOG_INFO, "Initializing SPI device %s", SPI_DEVICE);
     if((spiFd = open(SPI_DEVICE, O_WRONLY)) == -1)
@@ -133,10 +153,10 @@ void closeSPI(){
 
 void openRandom(){
 
-    if((randomFd = open(RANDOM_DEVICE, O_WRONLY)) == -1)
+    if((randomFd = open(RANDOM_DEVICE, O_RDONLY)) == -1)
         blog(LOG_ERROR, "Error opening %s", RANDOM_DEVICE);
     
-    if((urandomFd = open(URANDOM_DEVICE, O_WRONLY)) == -1)
+    if((urandomFd = open(URANDOM_DEVICE, O_RDONLY)) == -1)
         blog(LOG_ERROR, "Error opening %s", URANDOM_DEVICE);
 }
 
@@ -178,10 +198,10 @@ void showLeds(ledArray_t leds){
 }
 
 void setLedColor(ledArray_t leds, int numLed, ledColor_t color){
-//    memcpy(&leds[numLed*NUM_BYTES_LED], color, NUM_BYTES_LED);
-    leds[numLed*NUM_BYTES_LED]           = color[0];
-    leds[(numLed*NUM_BYTES_LED)+1]       = color[1];
-    leds[(numLed*NUM_BYTES_LED)+2]       = color[2];
+    memcpy(&leds[numLed*NUM_BYTES_LED], color, NUM_BYTES_LED);
+    //leds[numLed*NUM_BYTES_LED]           = color[0];
+    //leds[(numLed*NUM_BYTES_LED)+1]       = color[1];
+    //leds[(numLed*NUM_BYTES_LED)+2]       = color[2];
 }
 
 void fillLeds(ledArray_t leds, ledColor_t color){
@@ -220,28 +240,14 @@ void randomMode(int secDelay, long nSecDelay){
         
         showLeds(buff);
     
-        timeDelay.tv_sec        = secDelay;
-        timeDelay.tv_nsec       = nSecDelay;
-        
-        blog(LOG_INFO, "Waiting .... ");
-        if(nanosleep(&timeDelay, &timeDelayR) == -1)
-            blog(LOG_WARN, "Sleep not completed entirely");
+        delay(secDelay, nSecDelay);
     }
 }
     
 void rayMode(long raySpeed, int secInterval, ledColor_t color){
     int             i;
     ledArray_t      buff;
-    struct timespec rayDelay;
-    struct timespec secDelay;
-    
-    rayDelay.tv_sec     = 0;
-    rayDelay.tv_nsec    = raySpeed;
-    
-    secDelay.tv_sec  = secInterval;
-    secDelay.tv_nsec = 0L;
-    
-    
+        
     while(1){
         for(i = 0; i < NUM_LEDS; i++){
 
@@ -255,15 +261,13 @@ void rayMode(long raySpeed, int secInterval, ledColor_t color){
             showLeds(buff);
             
             // Wait for next led
-            if(nanosleep(&rayDelay, NULL) == -1)
-                blog(LOG_WARN, "Sleep not completed entirely");
+            delay(0, raySpeed);
         }
         
         clearLeds();
         
-        blog(LOG_INFO, "Waiting next ray .... ");
-        if(nanosleep(&secDelay, NULL) == -1)
-            blog(LOG_WARN, "Sleep not completed entirely");
+        // Wait for next ray
+        delay(secInterval, 0L);
     }
 }
 
@@ -272,11 +276,6 @@ void rainbowMode(long speed){
     ledColor_t color;
     u_int8_t r, g, b;
     
-    struct timespec speedDelay;
-    
-    speedDelay.tv_sec     = 0;
-    speedDelay.tv_nsec    = speed;
-    
     while(1){
         for(r = 0; r != 254; r++){
             for(g = 0; g != 254; g++){
@@ -284,12 +283,12 @@ void rainbowMode(long speed){
                     color[0] = r;
                     color[1] = g;
                     color[2] = b;
+                    
+                    // Fill entire led with single color.
                     fillLeds(leds, color);
-
                     showLeds(leds);
 
-                    if(nanosleep(&speedDelay, NULL) == -1)
-                        blog(LOG_WARN, "Sleep not completed entirely");
+                    delay(0, speed);
                 }
             }
         }
