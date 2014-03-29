@@ -14,7 +14,7 @@ bbLedServer.o : bbLedServer.c
 all : bbControlServer.o bbMediaServer.o bbLedServer.o
 	$(CC) bbControlServer.o ../libs/stringutils.o ../libs/serversocket.o ../libs/logger.o ../libs/procmanager.o -o bbControlServer
 	$(CC) bbMediaServer.o   ../libs/stringutils.o ../libs/serversocket.o ../libs/logger.o ../libs/procmanager.o -o bbMediaServer
-	$(CC) -L/opt/vc/lib -lbcm_host bbLedServer.o  ../libs/logger.o                                              -o bbLedServer
+	$(CC) -L/opt/vc/lib -lbcm_host bbLedServer.o  -lm                    ../libs/logger.o                       -o bbLedServer
 
 clean:
 	rm -rf *.o

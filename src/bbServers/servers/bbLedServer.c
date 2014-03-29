@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <math.h>
 
 #include "bcm_host.h"
 #include "../libs/logger.h"
@@ -221,6 +222,9 @@ void randomMode(int secDelay, long nSecDelay);
 void rayMode(long raySpeed, int secInterval, ledColor_t color);
 void doubleRayMode(int secRay, long nsecRay, int secInterval, long nsecInterval, ledColor_t color);
 void rainbowMode(int secs, long nsecs);
+
+void initVideoCore();
+void closeVideoCore();
 void videoBufferMode(int nPixelSampling, double brightness);
 void getLedColor4ImageBuffer(void* image, int imageWidht, int imageWeight, corner_t corn, int sampleWidht, int sampleHeight, ledColor_t led);
 
@@ -233,6 +237,11 @@ const ledColor_t  RAINBOW [NUM_PRED_COLORS] = { AQUA, AQUAMARINE, AZURE, BEIGE, 
 int spiFd       = -1;
 int randomFd    = -1;
 int urandomFd   = -1;
+
+DISPMANX_DISPLAY_HANDLE_T   display;
+DISPMANX_RESOURCE_HANDLE_T  resource;
+DISPMANX_MODEINFO_T         info;
+u_int8_t                    gammaC[256];
 
 
 // Main Control Server
@@ -297,6 +306,7 @@ void signalHandler(int sigNum){
         
     closeRandom();
     closeSPI();
+    closeVideoCore();
     exit(0);
 }
 
@@ -412,10 +422,19 @@ void colorCorrectionLeds(ledArray_t leds, double brightness){
     for(i = 0; i < NUM_LEDS; i++){
         ledOffset         = i * NUM_BYTES_LED;
         
-        //blog(LOG_DEBUG, "Led(%d) apply brightness (%f), to (R: %02X, G: %02X, B: %02X)", i, brightness, leds[ledOffset], leds[ledOffset+1], leds[ledOffset+2]);
+        blog(LOG_DEBUG, "Led(%d) RAW color = (R: %02X, G: %02X, B: %02X)", i, leds[ledOffset], leds[ledOffset+1], leds[ledOffset+2]);
+        
+        // Apply brightness
         leds[ledOffset]   = (u_int8_t) (((double) leds[ledOffset])   * brightness);
         leds[ledOffset+1] = (u_int8_t) (((double) leds[ledOffset+1]) * brightness);
         leds[ledOffset+2] = (u_int8_t) (((double) leds[ledOffset+2]) * brightness);
+        blog(LOG_DEBUG, "Led(%d) apply brightness (%f), to (R: %02X, G: %02X, B: %02X)", i, brightness, leds[ledOffset], leds[ledOffset+1], leds[ledOffset+2]);
+        
+        // Apply Gammma correction
+//        leds[ledOffset]   = gammaC[leds[ledOffset]];
+//        leds[ledOffset+1] = gammaC[leds[ledOffset+1]];
+//        leds[ledOffset+2] = gammaC[leds[ledOffset+2]];
+//        blog(LOG_DEBUG, "Led(%d) Gamma correction color = (R: %02X, G: %02X, B: %02X)", i, leds[ledOffset], leds[ledOffset+1], leds[ledOffset+2]);
     }    
 }
 
@@ -551,11 +570,31 @@ void rainbowMode(int secs, long nsecs){
     }
 }
 
+void initVideoCore(){
+    int ret, i;
+    
+    // Intializing Video System access
+    bcm_host_init();
+    
+    blog(LOG_DEBUG, "Opening VideoCore display[%i]...", VIDEOCORE_SCREEN);
+    display       = vc_dispmanx_display_open(VIDEOCORE_SCREEN);
+
+    ret           = vc_dispmanx_display_get_info(display, &info);
+    blog(LOG_DEBUG, "Display Size: %d x %d.", info.width, info.height);
+    
+    // Initializes gamma correction array. 
+    for(i = 0; i < 256 ; i++)
+        gammaC[i] = (u_int8_t) (pow(((double) i) / 255.0, 255.0) * 255);
+}
+
+void closeVideoCore(){
+    int ret;
+    ret = vc_dispmanx_resource_delete(resource);
+    ret = vc_dispmanx_display_close(display);
+}
+
 void videoBufferMode(int nPixelSampling, double brightness){
 
-    DISPMANX_DISPLAY_HANDLE_T   display;
-    DISPMANX_MODEINFO_T         info;
-    DISPMANX_RESOURCE_HANDLE_T  resource;
     VC_IMAGE_TYPE_T             type            =  VC_IMAGE_RGB888;
     VC_IMAGE_TRANSFORM_T        transform       = 0;
     VC_RECT_T                   rect;
@@ -567,18 +606,10 @@ void videoBufferMode(int nPixelSampling, double brightness){
     uint                        maxSampleSize;
     corner_t                    ledFrameCorners[NUM_LEDS]; // Stores image pixel position for each led
     ledArray_t                  leds;
-    int                         imageOffset;
     int                         ledsOffset;
     int                         perim;
     
-    // Intializing Video System access
-    bcm_host_init();
-    
-    blog(LOG_DEBUG, "Opening VideoCore display[%i]...", VIDEOCORE_SCREEN);
-    display       = vc_dispmanx_display_open(VIDEOCORE_SCREEN);
-
-    ret           = vc_dispmanx_display_get_info(display, &info);
-    blog(LOG_DEBUG, "Display Size: %d x %d.", info.width, info.height);
+    initVideoCore();
     
     // Allocate resources for video image buffer
     image         = calloc( 1, info.width*info.height*3);
@@ -621,9 +652,7 @@ void videoBufferMode(int nPixelSampling, double brightness){
         blog(LOG_DEBUG, "Led (%d) corner : [%d][%d]", i, ledFrameCorners[i][0], ledFrameCorners[i][1]);
     }
     
-    
-    // Simple aproximation to sampling video buffer 25 times/sec (Imprecise)    
-    // Take 25 frames per second
+    // Loop 4 video
     while(1){
         
 	blog(LOG_DEBUG, "vc_dispmanx_snapshot");
@@ -656,9 +685,7 @@ void videoBufferMode(int nPixelSampling, double brightness){
         delay(0, frameDelay);
     }
     
-    
-    ret = vc_dispmanx_resource_delete(resource);
-    ret = vc_dispmanx_display_close(display);
+    closeVideoCore();
 }
 
 void videoImageBuffer2File(char* filename, void* image, int32_t width, int32_t height){
