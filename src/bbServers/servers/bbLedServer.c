@@ -12,12 +12,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <sys/time.h>
 #include <string.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdint.h>
+#include <unistd.h>
 
+#include "bcm_host.h"
 #include "../libs/logger.h"
 
 // Devices
@@ -25,9 +28,13 @@
 #define URANDOM_DEVICE        "/dev/urandom"
 #define SPI_DEVICE            "/dev/spidev0.0"
 
+// Video Core Params
+#define VIDEOCORE_SCREEN      0
+
 // System Params
 #define NUM_LEDS              25
 #define NUM_BYTES_LED         3
+#define NUM_BYTES_PIXEL_BUFF  3
 
 // Colors
 #define NUM_PRED_COLORS       145
@@ -182,6 +189,7 @@
 // Types
 typedef u_int8_t ledColor_t[NUM_BYTES_LED];
 typedef u_int8_t ledArray_t[NUM_LEDS * NUM_BYTES_LED];
+typedef int corner_t[2];
 
 
 // Signal Handler
@@ -206,13 +214,15 @@ void showLeds(ledArray_t leds);
 void setLedColor(ledArray_t leds, int numLed, const ledColor_t color);
 void clearLeds();
 void fillLeds(ledArray_t leds, const ledColor_t color);
+void colorCorrectionLeds(ledArray_t leds, double brightness);
 
 // Leds Modes
 void randomMode(int secDelay, long nSecDelay);
 void rayMode(long raySpeed, int secInterval, ledColor_t color);
 void doubleRayMode(int secRay, long nsecRay, int secInterval, long nsecInterval, ledColor_t color);
 void rainbowMode(int secs, long nsecs);
-
+void videoBufferMode(int nPixelSampling, double brightness);
+void getLedColor4ImageBuffer(void* image, int imageWidht, int imageWeight, corner_t corn, int sampleWidht, int sampleHeight, ledColor_t led);
 
 
 // Constants
@@ -257,7 +267,10 @@ int main(int argc, char *argv){
     //rayMode(2000000L, 2, NULL);
     
     // Double Ray mode sample
-    doubleRayMode(0, 20000000L, 0, 500000000L, NULL);
+    //doubleRayMode(0, 20000000L, 0, 500000000L, NULL);
+    
+    // Video Buffer mode
+    videoBufferMode(50, 0.4);
     
     // Rainbow Mode
     //rainbowMode(1,0L);
@@ -392,6 +405,19 @@ void clearLeds(){
     showLeds(buff);
 }
 
+void colorCorrectionLeds(ledArray_t leds, double brightness){
+    int i;
+    int ledOffset;
+    
+    for(i = 0; i < NUM_LEDS; i++){
+        ledOffset         = i * NUM_BYTES_LED;
+        
+        //blog(LOG_DEBUG, "Led(%d) apply brightness (%f), to (R: %02X, G: %02X, B: %02X)", i, brightness, leds[ledOffset], leds[ledOffset+1], leds[ledOffset+2]);
+        leds[ledOffset]   = (u_int8_t) (((double) leds[ledOffset])   * brightness);
+        leds[ledOffset+1] = (u_int8_t) (((double) leds[ledOffset+1]) * brightness);
+        leds[ledOffset+2] = (u_int8_t) (((double) leds[ledOffset+2]) * brightness);
+    }    
+}
 
 // Led Modes
 void randomMode(int secDelay, long nSecDelay){
@@ -523,4 +549,155 @@ void rainbowMode(int secs, long nsecs){
             delay(secs, nsecs);
         }        
     }
+}
+
+void videoBufferMode(int nPixelSampling, double brightness){
+
+    DISPMANX_DISPLAY_HANDLE_T   display;
+    DISPMANX_MODEINFO_T         info;
+    DISPMANX_RESOURCE_HANDLE_T  resource;
+    VC_IMAGE_TYPE_T             type            =  VC_IMAGE_RGB888;
+    VC_IMAGE_TRANSFORM_T        transform       = 0;
+    VC_RECT_T                   rect;
+    void                        *image;
+    uint32_t                    vc_image_ptr;
+    int                         ret;
+    long int                    frameDelay      = 50000000L;
+    int                         i, j;             
+    uint                        maxSampleSize;
+    corner_t                    ledFrameCorners[NUM_LEDS]; // Stores image pixel position for each led
+    ledArray_t                  leds;
+    int                         imageOffset;
+    int                         ledsOffset;
+    int                         perim;
+    
+    // Intializing Video System access
+    bcm_host_init();
+    
+    blog(LOG_DEBUG, "Opening VideoCore display[%i]...", VIDEOCORE_SCREEN);
+    display       = vc_dispmanx_display_open(VIDEOCORE_SCREEN);
+
+    ret           = vc_dispmanx_display_get_info(display, &info);
+    blog(LOG_DEBUG, "Display Size: %d x %d.", info.width, info.height);
+    
+    // Allocate resources for video image buffer
+    image         = calloc( 1, info.width*info.height*3);
+    resource      = vc_dispmanx_resource_create(type, info.width, info.height, &vc_image_ptr);    
+    
+    // Calculate corners for sampling frame
+    blog(LOG_DEBUG, "Initializing leds frame corners.");
+    
+    perim         = info.width * 2 + info.height * 2;
+    maxSampleSize = perim / (NUM_LEDS + 1);
+    blog(LOG_DEBUG, "Perim : %d, maxSampleSize : %d.", perim, maxSampleSize);
+    
+    // Calculate screen corner for each led
+    for(i = 0; i <= NUM_LEDS; i++){
+        
+        // Current perimeter long
+        j = i * maxSampleSize;
+        
+        if(j <= info.width){ 
+            // TOP
+            ledFrameCorners[i /* LED i*/][0 /* pixel x position */] = 0;
+            ledFrameCorners[i][1] = j;
+            
+        }else if(j > info.width && j <= info.width + info.height){ 
+            // RIGHT
+            ledFrameCorners[i][0] = j - info.width;
+            ledFrameCorners[i][1] = info.width - nPixelSampling;
+            
+        }else if(j > info.height + info.width && j <= info.width * 2 + info.height){ 
+            // BOTTOM
+            ledFrameCorners[i][0] = info.height - nPixelSampling;
+            ledFrameCorners[i][1] = info.width-(j - (info.width + info.height));
+            
+        }else{ 
+            // LEFT
+            ledFrameCorners[i][0] = info.height-(j - (info.width * 2 + info.height));
+            ledFrameCorners[i][1] = 0;
+        }
+        
+        blog(LOG_DEBUG, "Led (%d) corner : [%d][%d]", i, ledFrameCorners[i][0], ledFrameCorners[i][1]);
+    }
+    
+    
+    // Simple aproximation to sampling video buffer 25 times/sec (Imprecise)    
+    // Take 25 frames per second
+    while(1){
+        
+	blog(LOG_DEBUG, "vc_dispmanx_snapshot");
+        vc_dispmanx_snapshot(display, resource, transform);
+
+	blog(LOG_DEBUG, "vc_dispmanx_rect_set");
+        vc_dispmanx_rect_set(&rect, 0, 0, info.width, info.height);
+
+	blog(LOG_DEBUG, "vc_dispmanx_resource_read_data");
+        vc_dispmanx_resource_read_data(resource, &rect, image, info.width*NUM_BYTES_PIXEL_BUFF); 
+
+        // Calculate Color for pixels
+	blog(LOG_DEBUG, "Setting pixels for video frame");
+        
+        for(i = 0; i < NUM_LEDS; i++){
+            ledsOffset  = i * NUM_BYTES_LED;
+            
+            //blog(LOG_DEBUG, "Led(%d) sampling corners = (%d, %d)", i, ledFrameCorners[i][0], ledFrameCorners[i][1]);
+            getLedColor4ImageBuffer(image, info.width, info.height, (int *) &ledFrameCorners[i] /* Screen Corner */, nPixelSampling, nPixelSampling, &leds[ledsOffset] /* Led Array Pixel */);
+            blog(LOG_DEBUG, "Led(%d) = (R: %02X, G: %02X, B: %02X)", i, leds[ledsOffset], leds[ledsOffset + 1], leds[ledsOffset + 2]);
+        }
+        
+        
+        colorCorrectionLeds(leds, brightness);
+        
+        // Display Leds
+        showLeds(leds);
+        
+        // Wait for next sample
+        delay(0, frameDelay);
+    }
+    
+    
+    ret = vc_dispmanx_resource_delete(resource);
+    ret = vc_dispmanx_display_close(display);
+}
+
+void videoImageBuffer2File(char* filename, void* image, int32_t width, int32_t height){
+    blog(LOG_DEBUG, "Video RAW buffer : %s", image);
+//    
+//    FILE *fp = fopen(filename, "wb");
+//    fprintf(fp, "P6\n%d %d\n255\n", width, height);
+//    fwrite(image, width*height, NUM_BYTES_PIXEL_BUFF, 1, fp);
+//    fclose(fp);
+}
+
+void getLedColor4ImageBuffer(void* image, int imageWidht, int imageWeight, corner_t corn, int sampleWidht, int sampleHeight, ledColor_t led){
+    int imageOffset;
+    int x, y;
+    long int acumR, acumG, acumB;
+    
+    
+    // No sampling method. Get color of pixel corner
+//    imageOffset = NUM_BYTES_PIXEL_BUFF * (corn[0] * imageWidht + corn[1]);
+//    led[0] = ((u_int8_t *) image)[imageOffset];
+//    led[1] = ((u_int8_t *) image)[imageOffset + 1];
+//    led[2] = ((u_int8_t *) image)[imageOffset + 2];
+    
+    
+    // Media of sample size (sampleWidht x sampleWidht) starting on corner 'corn'
+    acumR = acumG = acumB = 0;
+    
+    //blog(LOG_DEBUG, "Calculate average Color. Corner (%d, %d), sampleSize(%d, %d)", corn[0], corn[1], sampleWidht, sampleHeight);
+    for(x = corn[0]; x < corn[0]+sampleHeight-1; x++){
+        for(y = corn[1]; y < corn[1]+sampleWidht-1; y++){
+            imageOffset = NUM_BYTES_PIXEL_BUFF * (x * imageWidht + y);
+            
+            acumR       = (acumR + (int)((u_int8_t *) image)[imageOffset])     / 2;
+            acumG       = (acumG + (int)((u_int8_t *) image)[imageOffset + 1]) / 2;
+            acumB       = (acumB + (int)((u_int8_t *) image)[imageOffset + 2]) / 2;
+        }
+    }   
+    //blog(LOG_DEBUG, "Accumulate average for corner (%d, %d) -> (%d, %d) = (R: %02X, G: %02X, B: %02X)", corn[0], corn[1], x, y, acumR, acumG, acumB);
+    
+    // Set pixel led color
+    led[0] = (u_int8_t) acumR; led[1] = (u_int8_t) acumG; led[2] = (u_int8_t) acumB;
 }
