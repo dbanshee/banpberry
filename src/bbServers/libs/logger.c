@@ -6,6 +6,14 @@
 #include <sys/time.h>
 
 
+int LOG_LEVEL = LOG_ERROR;
+
+void setLogLevel(int level){
+    LOG_LEVEL = level;
+}
+
+
+
 char *getCurrentDate(){
     time_t t;
     time(&t);
@@ -40,6 +48,9 @@ void blog(int level, char *format, ...){
     va_start(argptr, format);
     vsnprintf(msg, MAXSIZEMSG, format, argptr);
     va_end(argptr);
+    
+    if(level > LOG_LEVEL)
+        return;
     
     if(level == LOG_INFO)
         printf("[INFO]  <%s>  %s\n", getCurrentDate(), msg);
