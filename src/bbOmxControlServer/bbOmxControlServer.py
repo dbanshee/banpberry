@@ -366,7 +366,7 @@ signal.signal(signal.SIGTERM, handleSigTERM)
 signal.signal(signal.SIGINT,  handleSigTERM)
 
 config = {}
-execfile("/bb/scripts/bbOmxControlServer.conf", config)
+execfile("bbOmxControlServer.conf", config)
 
 prompt          = "BB-OMXPLAYER>"
 badUsage        = "Bad Usage."

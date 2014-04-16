@@ -283,7 +283,7 @@ int main(int argc, char *argv){
     
     // Video Buffer mode
     ledsMap_t lMap = { 7 /* Left */, 11 /* Top */, 7 /* Right */, 0 /* Bottom */ };
-    videoBufferMode(lMap, 100, 25, 0.8, 0.7);
+    videoBufferMode(lMap, 100, 25, 1, 0.7);
     
     // Rainbow Mode
     //rainbowMode(1,0L);
@@ -310,7 +310,7 @@ void signalHandler(int sigNum){
         
     closeRandom();
     closeSPI();
-    closeVideoCore();
+    //closeVideoCore();
     exit(0);
 }
 
@@ -435,10 +435,12 @@ void colorCorrectionLeds(ledArray_t leds, double brightness){
         blog(LOG_TRACE, "Led(%d) apply brightness (%f), to (R: %02X, G: %02X, B: %02X)", i, brightness, leds[ledOffset], leds[ledOffset+1], leds[ledOffset+2]);
         
         // Apply Gammma correction
-//        leds[ledOffset]   = gammaC[leds[ledOffset]];
-//        leds[ledOffset+1] = gammaC[leds[ledOffset+1]];
-//        leds[ledOffset+2] = gammaC[leds[ledOffset+2]];
-//        blog(LOG_TRACE, "Led(%d) Gamma correction color = (R: %02X, G: %02X, B: %02X)", i, leds[ledOffset], leds[ledOffset+1], leds[ledOffset+2]);
+        /*
+        leds[ledOffset]   = gammaC[leds[ledOffset]];
+        leds[ledOffset+1] = gammaC[leds[ledOffset+1]];
+        leds[ledOffset+2] = gammaC[leds[ledOffset+2]];
+        blog(LOG_TRACE, "Led(%d) Gamma correction color = (R: %02X, G: %02X, B: %02X)", i, leds[ledOffset], leds[ledOffset+1], leds[ledOffset+2]);
+        */
     }    
 }
 
@@ -580,11 +582,11 @@ void initVideoCore(){
     // Intializing Video System access
     bcm_host_init();
     
-    blog(LOG_DEBUG, "Opening VideoCore display[%i]...", VIDEOCORE_SCREEN);
+    blog(LOG_INFO, "Opening VideoCore display[%i]...", VIDEOCORE_SCREEN);
     display       = vc_dispmanx_display_open(VIDEOCORE_SCREEN);
 
     ret           = vc_dispmanx_display_get_info(display, &info);
-    blog(LOG_DEBUG, "Display Size: %d x %d.", info.width, info.height);
+    blog(LOG_INFO, "Display Size: %d x %d.", info.width, info.height);
     
     // Initializes gamma correction array. 
     for(i = 0; i < 256 ; i++)
@@ -659,7 +661,6 @@ void videoBufferMode(ledsMap_t ledMapping, int nPixelSampling, int nPixelGran, d
     for(i = 0; i < NUM_LEDS; i++)
         blog(LOG_TRACE, "Led(%d) corner (%d, %d)", i, ledFrameCorners[i][0], ledFrameCorners[i][1]);
     
-    
     // Loop 4 video
     blog(LOG_INFO, "Processing video buffer ...");
     while(1){
@@ -714,13 +715,14 @@ void getLedColor4ImageBuffer(void* image, int imageWidht, int imageWeight, corne
     
     
     // No sampling method. Get color of pixel corner
-//    imageOffset = NUM_BYTES_PIXEL_BUFF * (corn[0] * imageWidht + corn[1]);
-//    led[0] = ((u_int8_t *) image)[imageOffset];
-//    led[1] = ((u_int8_t *) image)[imageOffset + 1];
-//    led[2] = ((u_int8_t *) image)[imageOffset + 2];
+    /*
+    imageOffset = NUM_BYTES_PIXEL_BUFF * (corn[0] * imageWidht + corn[1]);
+    led[0] = ((u_int8_t *) image)[imageOffset];
+    led[1] = ((u_int8_t *) image)[imageOffset + 1];
+    led[2] = ((u_int8_t *) image)[imageOffset + 2];
+    */
     
-    
-    // Media of sample size (sampleWidht x sampleWidht) starting on corner 'corn'
+    // Media of sample size (sampleWidht x sampleWidht) starting on corner 'corn' with granularity 'pixelGran' pixels.
     acumR = acumG = acumB = 0;
     numSamples = 0;
     blog(LOG_DEBUG, "Calculate average Color. Corner (%d, %d), sampleSize(%d, %d)", corn[0], corn[1], sampleWidht, sampleHeight);
